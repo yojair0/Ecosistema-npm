@@ -1,0 +1,7 @@
+﻿data/
+*.jsonl
+nombres_ordenados.json
+checkpoint*.json
+__pycache__/
+*.pyc
+*.zip
