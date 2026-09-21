@@ -5,6 +5,8 @@ extrae dependencias declaradas y calcula metricas de posicion topologica.
 
 ## Snapshot
 
+| | |
+|---|---|
 | Fecha | 18-09-2026 |
 | Seq final | 131,412,017 |
 | Paquetes activos | 4,405,737 |
@@ -14,7 +16,7 @@ extrae dependencias declaradas y calcula metricas de posicion topologica.
 El plan original usaba include_docs=true en el feed de replicacion para
 traer el documento completo de cada paquete en una sola pasada. Cloudflare
 lo bloquea (400 Bad Request, verificado en cuatro variantes). Sin ese
-parametro el feed solo entrega identidad, no contenido.
+parametro el feed solo entrega identidad, no contenidoo.
 
 La extraccion quedo dividida en dos:
 
@@ -34,12 +36,13 @@ Pasada 1 -- feed de replicacion completo desde seq=0
 | Eventos totales | 6,433,267 |
 | Paquetes activos | 4,405,737 |
 | Paquetes borrados | 2,027,530 (31.5%) |
-| Con @org/ | 1,703,010 (38.7%) |
+| Con  @org/ | 1,703,010 (38.7%) |
 | Shards | 65 |
 
 Pasada 2 -- contenido por paquete
 
-
+| | |
+|---|---|
 | Con version utilizable | 4,394,970 |
 | Sin version | 1,280 |
 | Despublicados entre pasadas | 9,486 (0.22%) |
@@ -65,7 +68,7 @@ Pasada 2 -- contenido por paquete
 
 Los shards no estan en el repositorio (~2 GB). Descarga:
 
-    [enlace pendiente]
+    [https://drive.google.com/drive/folders/1P4nBb1kxQjd_7do0P_UITV4nXLhzqcTQ?usp=sharing]
 
 Descomprimir en data/ manteniendo la estructura data/pasada1/ y
 data/pasada2/.
