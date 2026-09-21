@@ -33,6 +33,9 @@ progreso.
 
 Pasada 1 -- feed de replicacion completo desde seq=0
 
+| | |
+|---|---|
+
 | Eventos totales | 6,433,267 |
 | Paquetes activos | 4,405,737 |
 | Paquetes borrados | 2,027,530 (31.5%) |
