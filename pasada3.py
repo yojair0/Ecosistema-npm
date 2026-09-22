@@ -12,6 +12,7 @@ Salidas:
 """
 import json, glob, time, os
 from collections import Counter
+from config import SNAPSHOT_SEQ
 
 IN_DIR   = "data/pasada2"
 OUT_CSV  = "data/metricas_externas.csv"
@@ -40,11 +41,12 @@ def main():
             d = json.loads(line)
             lineas += 1
 
+            nombre = norm(d["name"])
+
             if "error" in d:
                 n_404 += 1
-                continue                    # no existe -> no es nodo
-
-            nombre = norm(d["name"])
+                nodos.add(nombre)           # nodo fantasma: recibe Fan-In, sin Fan-Out
+                continue
             nodos.add(nombre)
 
             if d.get("sin_version"):
@@ -114,7 +116,7 @@ def main():
 
     res = {
         "fecha":              time.strftime("%Y-%m-%d %H:%M"),
-        "snapshot_seq":       131_412_017,
+        "snapshot_seq":       SNAPSHOT_SEQ,
         "nodos":              len(nodos),
         "con_version":        len(deps_de),
         "sin_version":        len(sin_version),

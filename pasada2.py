@@ -66,7 +66,8 @@ def cargar_ckpt():
         c["base"]   = c["idx"]
         return c
     return {"idx": 0, "shard": 0, "ok": 0, "sin_version": 0,
-            "error": 0, "inicio": time.time(), "base": 0}
+            "error": 0, "inicio": time.time(), "base": 0,
+            "fecha_inicio": time.strftime("%Y-%m-%d %H:%M")}
 
 
 def guardar_ckpt(c):

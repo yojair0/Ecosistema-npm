@@ -11,8 +11,7 @@ Estado : data/checkpoint.json  (reanudable)
 """
 import json, time, os
 import urllib.request
-
-TOPE    = 131_410_821          # tope medido 18-09-2026
+from config import SNAPSHOT_SEQ as TOPE
 LIMIT   = 10_000
 OUT_DIR = "data/pasada1"
 CKPT    = "data/checkpoint.json"
@@ -27,7 +26,8 @@ def cargar():
         c["inicio"] = time.time()      # reinicia el cronometro al reanudar
         return c
     return {"since": 0, "eventos": 0, "vivos": 0,
-            "shard": 0, "paginas": 0, "inicio": time.time()}
+            "shard": 0, "paginas": 0, "inicio": time.time(),
+            "fecha_inicio": time.strftime("%Y-%m-%d %H:%M")}
 
 
 def guardar(c):
