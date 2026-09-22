@@ -14,10 +14,11 @@ import json, glob, time, os
 from collections import Counter
 from config import SNAPSHOT_SEQ
 
-IN_DIR   = "data/pasada2"
-OUT_CSV  = "data/metricas_externas.csv"
-OUT_COLG = "data/colgantes.txt"
-OUT_RES  = "data/resumen_grafo.json"
+IN_DIR      = "data/pasada2"
+OUT_CSV     = "data/metricas_externas.csv"
+OUT_COLG    = "data/colgantes.txt"
+OUT_RES     = "data/resumen_grafo.json"
+OUT_ARISTAS = "data/aristas.jsonl"
 
 
 def norm(nombre):
@@ -69,23 +70,26 @@ def main():
     colg    = Counter(); colg_dev = Counter()
     ar = ar_dev = 0
 
-    for origen, dsts in deps_de.items():
-        fan_out[origen] = len(dsts)
-        ar += len(dsts)
-        for dst in dsts:
-            if dst in nodos:
-                fan_in[dst] += 1
-            else:
-                colg[dst] += 1
+    with open(OUT_ARISTAS, "w", encoding="utf-8") as fa:
+        for origen, dsts in deps_de.items():
+            fan_out[origen] = len(dsts)
+            ar += len(dsts)
+            for dst in dsts:
+                fa.write(json.dumps({"src": origen, "dst": dst, "type": "prod"}) + "\n")
+                if dst in nodos:
+                    fan_in[dst] += 1
+                else:
+                    colg[dst] += 1
 
-    for origen, dsts in devdeps_de.items():
-        fo_dev[origen] = len(dsts)
-        ar_dev += len(dsts)
-        for dst in dsts:
-            if dst in nodos:
-                fi_dev[dst] += 1
-            else:
-                colg_dev[dst] += 1
+        for origen, dsts in devdeps_de.items():
+            fo_dev[origen] = len(dsts)
+            ar_dev += len(dsts)
+            for dst in dsts:
+                fa.write(json.dumps({"src": origen, "dst": dst, "type": "dev"}) + "\n")
+                if dst in nodos:
+                    fi_dev[dst] += 1
+                else:
+                    colg_dev[dst] += 1
 
     print(f"  aristas deps    : {ar:,}")
     print(f"  aristas devDeps : {ar_dev:,}")
