@@ -5,3 +5,6 @@ checkpoint*.json
 __pycache__/
 *.pyc
 *.zip
+
+pruebas/
+resultados/
