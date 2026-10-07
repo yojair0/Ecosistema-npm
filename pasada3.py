@@ -44,10 +44,7 @@ def main():
         for line in open(f, encoding="utf-8"):
             d = json.loads(line)
             lineas += 1
-            
-            if lineas % 500_000 == 0:
-                mins = (time.time() - t0) / 60
-                print(f"  {lineas:>10,} lineas leidas | {mins:5.2f} min")
+
 
             if lineas % 500_000 == 0:
                 mins = (time.time() - t0) / 60
@@ -155,7 +152,6 @@ def main():
     print(f"    Fan-In >= 6  : {res['fan_in_6mas_pct']:>6}%   (ellos  4.9%)")
     print(f"    Con >=1 dep  : {res['con_1dep_pct']:>6}%   (ellos 81.3%)")
     print(f"{'-'*60}")
-    print(f"  Snapshot seq       : {SNAPSHOT_SEQ:>12,}")
     print(f"  Tiempo             : {(time.time()-t0)/60:>12.1f} min")
     print(f"{'='*60}")
     print(f"  Snapshot seq       : {SNAPSHOT_SEQ:>12,}")
