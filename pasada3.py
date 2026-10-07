@@ -3,12 +3,15 @@
 Pasada 3 -- Grafo de dependencias y metricas externas.
 
 Cubre pasos 4 (aristas), 5 (normalizar), 6 (colgantes) y 10 (Fan-In/Out).
-Entrada: data/pasada2/*.jsonl.
+Entrada: data/pasada2/*.jsonl
 
 Salidas:
   data/metricas_externas.csv   tabla final por paquete
   data/colgantes.txt           destinos inexistentes, por frecuencia
   data/resumen_grafo.json      estadisticas del grafo
+  data/aristas.jsonl           aristas individuales (src, dst, tipo)
+
+No consulta internet. Procesamiento local.
 """
 import json, glob, time, os
 from collections import Counter
@@ -29,7 +32,7 @@ def norm(nombre):
 def main():
     t0 = time.time()
 
-    # ---- 1. Cargar nodos y dependencias ------
+    # ---- 1. Cargar nodos y dependencias ------------------------------
     print("Leyendo shards...")
     nodos       = set()
     deps_de     = {}
@@ -42,6 +45,10 @@ def main():
             d = json.loads(line)
             lineas += 1
             
+            if lineas % 500_000 == 0:
+                mins = (time.time() - t0) / 60
+                print(f"  {lineas:>10,} lineas leidas | {mins:5.2f} min")
+
             if lineas % 500_000 == 0:
                 mins = (time.time() - t0) / 60
                 print(f"  {lineas:>10,} lineas leidas | {mins:5.2f} min")
@@ -114,7 +121,7 @@ def main():
                         key=lambda x: -(colg[x] + colg_dev[x])):
             f.write(f"{c}\t{colg[c]}\t{colg_dev[c]}\n")
 
-    # ---- 4. Estadisticas --------------------------------------------
+    # ---- 4. Estadisticas ---------------------------------------------
     fi_todos = [fan_in.get(n, 0) for n in nodos]
     cero     = sum(1 for x in fi_todos if x == 0)
     seis     = sum(1 for x in fi_todos if x >= 6)
@@ -130,14 +137,14 @@ def main():
         "aristas_deps":       ar,
         "aristas_devdeps":    ar_dev,
         "colgantes_distintos": len(colg),
-        "colgantes_refs":     sum(colg.values()),
-        "fan_in_cero_pct":    round(cero / len(nodos) * 100, 2),
-        "fan_in_6mas_pct":    round(seis / len(nodos) * 100, 2),
-        "con_1dep_pct":       round(con_dep / len(deps_de) * 100, 2),
+        "colgantes_refs":      sum(colg.values()),
+        "fan_in_cero_pct":     round(cero / len(nodos) * 100, 2),
+        "fan_in_6mas_pct":     round(seis / len(nodos) * 100, 2),
+        "con_1dep_pct":        round(con_dep / len(deps_de) * 100, 2),
     }
     json.dump(res, open(OUT_RES, "w"), indent=2)
 
-    # ---- 5. Reporte -------------------------------------------------
+    # ---- 5. Reporte ----------------------------------------------------
     print(f"\n{'='*60}")
     print(f"  Nodos              : {len(nodos):>12,}")
     print(f"  Aristas (deps)     : {ar:>12,}")
@@ -148,6 +155,7 @@ def main():
     print(f"    Fan-In >= 6  : {res['fan_in_6mas_pct']:>6}%   (ellos  4.9%)")
     print(f"    Con >=1 dep  : {res['con_1dep_pct']:>6}%   (ellos 81.3%)")
     print(f"{'-'*60}")
+    print(f"  Snapshot seq       : {SNAPSHOT_SEQ:>12,}")
     print(f"  Tiempo             : {(time.time()-t0)/60:>12.1f} min")
     print(f"{'='*60}")
     print(f"  Snapshot seq       : {SNAPSHOT_SEQ:>12,}")
