@@ -1,93 +1,174 @@
 #!/usr/bin/env python3
 """
-Phase 1 -- Profile extraction over the registry.
+Pass 4 -- Package profile extraction over the whole registry.
 
-MODE = "latest"  -> ~3 KB/pkg, ~3 h, no creation date, no version count
-MODE = "full"    -> ~51 KB/pkg, ~37 h, everything
+MODE = "full"    ~51 KB/pkg. Includes creation date, modification date and
+                 version count. Required for the age analysis.
+MODE = "latest"  ~3 KB/pkg. Much faster, but creation date and version count
+                 are unavailable, so the age confounder cannot be measured.
 
-Non-usable packages are classified during the walk and written to
-data/profile_problems.jsonl, so no separate filtering pass is needed.
+Packages that cannot be profiled are classified during the walk and written
+to a separate file, so no later filtering pass is needed.
 
-Input : data/pasada2/*.jsonl
-Output: data/profile/shard_NNNNN.jsonl   (usable only)
-        data/profile_problems.jsonl      (everything else)
-State : data/checkpoint_profile.json
+Input : data/pasada1/*.jsonl          (id, seq, deleted)
+Output: data/profile/shard_NNNNN.jsonl
+        data/profile_problems.jsonl
+        data/profile_run_meta.json
+State : data/checkpoint_profile.json  (resumable, Ctrl+C once)
 """
-import json, os, time, glob, signal, sys
-import urllib.request, urllib.error, urllib.parse
+import json
+import os
+import re
+import signal
+import sys
+import time
+import glob
+import urllib.request
+import urllib.error
+import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 
-MODE     = "full"          # "latest" or "full"
+from config import (SNAPSHOT_SEQ, SNAPSHOT_DATE, NAMES_CACHE,
+                    DIR_INDEX, USER_AGENT)
 
-IN_DIR   = "data/pasada1"
+MODE     = "full"
+
+IN_DIR   = DIR_INDEX
 OUT_DIR  = "data/profile"
 PROBLEMS = "data/profile_problems.jsonl"
 CKPT     = "data/checkpoint_profile.json"
-NAMES    = "data/names_sorted.json"
+META     = "data/profile_run_meta.json"
 
 SHARD_N  = 50_000
 WORKERS  = 16
 PAUSE    = 0.03
 
-os.makedirs(OUT_DIR, exist_ok=True)
-HDR = {"User-Agent": "UCN-research/1.0 (jairo.vergara@alumnos.ucn.cl)"}
+HDR = {"User-Agent": USER_AGENT}
+
+# npm shorthand that resolves to GitHub: "user/repo" with no host.
+_SHORTHAND = re.compile(r"^[\w.-]+/[\w.-]+$")
 
 _stop = False
+
+
 def _handler(sig, frame):
     global _stop
     if _stop:
         sys.exit(1)
     _stop = True
     print("\n  Ctrl+C -- flushing shard and saving checkpoint...")
-signal.signal(signal.SIGINT, _handler)
+
+
+def norm(name):
+    """Same normalisation as the graph pass, so tables join correctly."""
+    return name.strip().lower()
 
 
 def load_names():
-    """Live package names from phase 1 (feed ingest).
+    """Live package names from the registry index pass.
 
-    Phase 1 records use "id" and "deleted"; phase 2 used "name".
-    Reading phase 1 directly avoids re-running phase 2 on a new machine,
-    since the profile pass already collects dependency data.
+    Index records use "id" and "deleted". The sorted order is what makes
+    the checkpoint index meaningful across runs, so it must stay stable.
     """
-    if os.path.exists(NAMES):
-        return json.load(open(NAMES, encoding="utf-8"))
+    if os.path.exists(NAMES_CACHE):
+        with open(NAMES_CACHE, encoding="utf-8") as f:
+            cached = json.load(f)
+        if cached:                      # an empty cache means a failed run
+            return cached
+        print("  Name cache is empty, rebuilding...")
+
     print("Building name list...")
-    n = []
-    for f in sorted(glob.glob(f"{IN_DIR}/*.jsonl")):
-        for line in open(f, encoding="utf-8"):
-            d = json.loads(line)
-            if not d.get("deleted"):
-                n.append(d["id"])
-    n.sort()
-    json.dump(n, open(NAMES, "w", encoding="utf-8"))
-    print(f"  {len(n):,} names cached")
-    return n
+    names = []
+    for path in sorted(glob.glob(f"{IN_DIR}/*.jsonl")):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                rec = json.loads(line)
+                if not rec.get("deleted"):
+                    names.append(rec["id"])
+    names.sort()
+
+    with open(NAMES_CACHE, "w", encoding="utf-8") as f:
+        json.dump(names, f)
+    print(f"  {len(names):,} names cached in {NAMES_CACHE}")
+    return names
+
 
 def load_ckpt():
     if os.path.exists(CKPT):
-        c = json.load(open(CKPT))
+        with open(CKPT) as f:
+            c = json.load(f)
         c["start"] = time.time()
         return c
-    return {"idx": 0, "shard": 0, "mode": MODE,
-            "start": time.time(), "began": time.strftime("%Y-%m-%d %H:%M"),
-            "counts": {}}
+    return {
+        "idx": 0,
+        "shard": 0,
+        "mode": MODE,
+        "start": time.time(),
+        "started_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "counts": {},
+    }
 
 
 def save_ckpt(c):
+    """Atomic write with fsync.
+
+    Without the fsync, os.replace can run before the buffer reaches disk,
+    which on a multi-hour walk means losing the resume index.
+    """
     tmp = CKPT + ".tmp"
-    json.dump(c, open(tmp, "w"))
+    with open(tmp, "w") as f:
+        json.dump(c, f)
+        f.flush()
+        os.fsync(f.fileno())
     os.replace(tmp, CKPT)
 
 
+def save_meta(c, finished):
+    """Run metadata for the paper: when the data was actually collected."""
+    meta = {
+        "snapshot_seq": SNAPSHOT_SEQ,
+        "snapshot_date": SNAPSHOT_DATE,
+        "mode": MODE,
+        "started_at": c.get("started_at"),
+        "finished_at": finished,
+        "packages_processed": c["idx"],
+        "counts": c["counts"],
+        "shards": c["shard"],
+    }
+    tmp = META + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, META)
+
+
 def has_github(repo):
+    """True for every form npm accepts that resolves to GitHub.
+
+    Recognised: full URLs containing github.com, the "github:user/repo"
+    prefix, and the bare "user/repo" shorthand, which npm resolves to
+    GitHub by default. Explicit gitlab: or bitbucket: prefixes are not.
+    """
     if not repo:
         return False
     url = repo.get("url", "") if isinstance(repo, dict) else str(repo)
-    return "github.com" in url.lower()
+    url = url.strip()
+    if not url:
+        return False
+
+    low = url.lower()
+    if low.startswith(("gitlab:", "bitbucket:", "gist:")):
+        return False
+    if "github.com" in low:
+        return True
+    if low.startswith("github:"):
+        return True
+    return bool(_SHORTHAND.match(url))
 
 
 def request(url):
-    """Returns (doc, status, extra). status 'ok' means doc is valid."""
+    """Returns (doc, status, detail). Status 'ok' means doc is usable."""
     for attempt in range(3):
         try:
             req = urllib.request.Request(url, headers=HDR)
@@ -95,7 +176,7 @@ def request(url):
                 return json.load(r), "ok", None
         except urllib.error.HTTPError as e:
             if e.code in (404, 410):
-                return None, "gone", e.code          # no retry
+                return None, "gone", e.code       # permanent, no retry
             if attempt == 2:
                 return None, "http_error", e.code
             time.sleep(1 + attempt * 2)
@@ -107,27 +188,33 @@ def request(url):
 
 
 def project(name, v, root=None):
-    """Build the output record from a version manifest (+ root doc if full)."""
+    """Build the output record.
+
+    Dependency counts for prod and dev are deliberately omitted: the graph
+    pass already derives them as fan-out from the dependency lists, measured
+    on the same snapshot. Peer and optional edge lists are kept because
+    fan-in for those types cannot be derived from counts alone.
+    """
     dist = v.get("dist") or {}
-    src = root if root else v
+    src = root if root is not None else v
+
     kw = src.get("keywords") or v.get("keywords") or []
     if not isinstance(kw, list):
         kw = []
+
     mt = src.get("maintainers") or v.get("maintainers") or []
 
     rec = {
-        "name":          name,
-        "status":        "ok",
-        "scoped":        name.startswith("@"),
+        "name":          norm(name),
         "latest":        v.get("version"),
-        "n_prod":        len(v.get("dependencies") or {}),
-        "n_dev":         len(v.get("devDependencies") or {}),
         "n_peer":        len(v.get("peerDependencies") or {}),
         "n_opt":         len(v.get("optionalDependencies") or {}),
-        "peer":          sorted((v.get("peerDependencies") or {}).keys()),
-        "opt":           sorted((v.get("optionalDependencies") or {}).keys()),
+        "peer":          sorted(norm(k) for k in (v.get("peerDependencies") or {})),
+        "opt":           sorted(norm(k) for k in (v.get("optionalDependencies") or {})),
         "n_maintainers": len(mt) if isinstance(mt, list) else 0,
-        "deprecated":    "deprecated" in v,
+        # Truthy only: npm un-deprecates by setting an empty string, so the
+        # key alone is not enough to call a package deprecated.
+        "deprecated":    bool(v.get("deprecated")),
         "keywords":      kw[:30],
         "n_keywords":    len(kw),
         "has_github":    has_github(src.get("repository") or v.get("repository")),
@@ -135,45 +222,48 @@ def project(name, v, root=None):
         "unpacked":      dist.get("unpackedSize"),
     }
 
-    if root is not None:                       # full mode only
+    if root is not None:
         t = root.get("time") or {}
         rec["created"]    = t.get("created")
         rec["modified"]   = t.get("modified")
         rec["n_versions"] = len(root.get("versions") or {})
     else:
-        rec["created"] = rec["modified"] = None
+        rec["created"] = None
+        rec["modified"] = None
         rec["n_versions"] = None
 
+    rec["_status"] = "ok"      # routing only, stripped before writing
     return rec
 
 
 def fetch_latest(name):
     url = ("https://registry.npmjs.org/"
            + urllib.parse.quote(name, safe="@/") + "/latest")
-    d, st, extra = request(url)
-    if st != "ok":
-        return {"name": name, "status": st, "detail": extra}
-    if not d or not d.get("version"):
-        return {"name": name, "status": "no_latest_tag"}
-    return project(name, d)
+    doc, status, detail = request(url)
+    if status != "ok":
+        return {"name": name, "_status": status, "detail": detail}
+    if not doc or not doc.get("version"):
+        return {"name": name, "_status": "no_latest_tag"}
+    return project(name, doc)
 
 
 def fetch_full(name):
     url = "https://registry.npmjs.org/" + urllib.parse.quote(name, safe="@/")
-    d, st, extra = request(url)
-    if st != "ok":
-        return {"name": name, "status": st, "detail": extra}
+    doc, status, detail = request(url)
+    if status != "ok":
+        return {"name": name, "_status": status, "detail": detail}
 
-    vs = d.get("versions") or {}
-    latest = (d.get("dist-tags") or {}).get("latest")
-    if not vs:
-        return {"name": name, "status": "no_versions"}
+    versions = doc.get("versions") or {}
+    latest = (doc.get("dist-tags") or {}).get("latest")
+    if not versions:
+        return {"name": name, "_status": "no_versions"}
     if not latest:
-        return {"name": name, "status": "no_latest_tag", "n_versions": len(vs)}
-    if latest not in vs:
-        return {"name": name, "status": "latest_missing",
-                "latest": latest, "n_versions": len(vs)}
-    return project(name, vs[latest], root=d)
+        return {"name": name, "_status": "no_latest_tag",
+                "n_versions": len(versions)}
+    if latest not in versions:
+        return {"name": name, "_status": "latest_missing",
+                "latest": latest, "n_versions": len(versions)}
+    return project(name, versions[latest], root=doc)
 
 
 FETCH = fetch_latest if MODE == "latest" else fetch_full
@@ -185,23 +275,31 @@ def work(name):
 
 
 def flush(buf, shard):
-    good = [b for b in buf if b.get("status") == "ok"]
-    bad  = [b for b in buf if b.get("status") != "ok"]
+    """Usable records go to the shard, everything else to the problems file."""
+    good, bad = [], []
+    for rec in buf:
+        if rec.pop("_status", None) == "ok":
+            good.append(rec)
+        else:
+            bad.append(rec)
 
     path = f"{OUT_DIR}/shard_{shard:05d}.jsonl"
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        for b in good:
-            f.write(json.dumps(b, ensure_ascii=False) + "\n")
+        for rec in good:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     os.replace(tmp, path)
 
     if bad:
         with open(PROBLEMS, "a", encoding="utf-8") as f:
-            for b in bad:
-                f.write(json.dumps(b, ensure_ascii=False) + "\n")
+            for rec in bad:
+                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 
 def main():
+    os.makedirs(OUT_DIR, exist_ok=True)
+    signal.signal(signal.SIGINT, _handler)
+
     names = load_names()
     c = load_ckpt()
     total = len(names)
@@ -211,13 +309,13 @@ def main():
               f"now running '{MODE}'. Delete {CKPT} to restart cleanly.")
         return
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  Mode      : {MODE}")
     print(f"  Total     : {total:,}")
     print(f"  Resuming  : index {c['idx']:,}")
     print(f"  Remaining : {total - c['idx']:,}")
     print(f"  Workers   : {WORKERS}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     if c["idx"] >= total:
         print("Already complete.")
@@ -227,9 +325,9 @@ def main():
     pending = names[c["idx"]:]
 
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        for i, res in enumerate(pool.map(work, pending), 1):
-            buf.append(res)
-            st = res.get("status", "unknown")
+        for i, rec in enumerate(pool.map(work, pending), 1):
+            buf.append(rec)
+            st = rec.get("_status", "unknown")
             c["counts"][st] = c["counts"].get(st, 0) + 1
 
             if len(buf) >= SHARD_N or _stop:
@@ -240,16 +338,16 @@ def main():
                 buf = []
                 save_ckpt(c)
                 if _stop:
+                    save_meta(c, None)
                     print(f"  Saved at index {c['idx']:,}. Re-run to continue.")
                     return
 
             if i % 10_000 == 0:
                 done = c["idx"] + len(buf)
-                el = time.time() - c["start"]
-                rate = i / el
+                rate = i / (time.time() - c["start"])
                 eta = (total - done) / rate / 3600
                 ok = c["counts"].get("ok", 0)
-                print(f"  {done:>9,}/{total:,} | {done/total*100:5.1f}% | "
+                print(f"  {done:>9,}/{total:,} | {done / total * 100:5.1f}% | "
                       f"ok={ok:>9,} | {rate:5.1f}/s | ETA {eta:5.1f}h")
 
     if buf:
@@ -257,15 +355,17 @@ def main():
         c["shard"] = shard + 1
         c["idx"] += len(buf)
     save_ckpt(c)
+    save_meta(c, time.strftime("%Y-%m-%dT%H:%M:%S%z"))
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     for k, v in sorted(c["counts"].items(), key=lambda x: -x[1]):
         print(f"  {k:<16}: {v:>12,}")
     print(f"  {'shards':<16}: {c['shard']:>12,}")
-    print(f"  {'elapsed':<16}: {(time.time()-c['start'])/3600:>12.1f} h")
-    print(f"{'='*60}")
-    print(f"\n  Usable  -> {OUT_DIR}/")
-    print(f"  Problems-> {PROBLEMS}")
+    print(f"  {'elapsed':<16}: {(time.time() - c['start']) / 3600:>12.1f} h")
+    print(f"{'=' * 60}")
+    print(f"\n  Usable   -> {OUT_DIR}/")
+    print(f"  Problems -> {PROBLEMS}")
+    print(f"  Run meta -> {META}")
 
 
 if __name__ == "__main__":
