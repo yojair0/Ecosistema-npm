@@ -1,8 +1,23 @@
 #!/usr/bin/env python3
-"""Pre-flight checks. Run before the long extraction."""
-import json, time, urllib.request, urllib.parse
+"""Pre-flight checks. Run from the repository root:
 
-HDR = {"User-Agent": "UCN-research/1.0 (jairo.vergara@alumnos.ucn.cl)"}
+    python3 tools/preflight_check.py
+"""
+import glob
+import json
+import os
+import sys
+import time
+import urllib.request
+import urllib.parse
+
+# Script lives in tools/, so the repository root must be on the path for
+# the config import to resolve.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from config import DIR_INDEX, USER_AGENT
+
+HDR = {"User-Agent": USER_AGENT}
 PKGS = ["express", "@babel/parser", "lodash", "is-odd", "left-pad"]
 FIELDS = ["time", "keywords", "maintainers", "versions", "dist-tags"]
 
@@ -11,7 +26,6 @@ def get(url, timeout=30):
     req = urllib.request.Request(url, headers=HDR)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.load(r)
-
 
 print("=" * 62)
 print("1. FULL METADATA FORMAT")
@@ -65,13 +79,14 @@ print("3. THROUGHPUT ESTIMATE (full format, 30 packages)")
 print("=" * 62)
 import glob
 names = []
-for f in sorted(glob.glob("data/pasada2/*.jsonl"))[:1]:
-    for line in open(f, encoding="utf-8"):
-        d = json.loads(line)
-        if "error" not in d:
-            names.append(d["name"])
-        if len(names) >= 30:
-            break
+for path in sorted(glob.glob(f"{DIR_INDEX}/*.jsonl"))[:1]:
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            rec = json.loads(line)
+            if not rec.get("deleted"):
+                names.append(rec["id"])
+            if len(names) >= 30:
+                break
 
 t0 = time.time()
 ok = 0

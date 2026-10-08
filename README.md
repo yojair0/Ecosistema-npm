@@ -1,95 +1,67 @@
-﻿# Estructura interna vs. topologia externa en NPM
+﻿# Internal structure vs. dependency-network position in NPM
 
-Pipeline Recorre el registro de NPM,
-extrae dependencias declaradas y calcula metricas de posicion topologica.
+Extraction pipeline for the npm registry. Measures each package's position
+in the dependency network and collects profile metadata for stratification.
 
 ## Snapshot
 
 | | |
 |---|---|
-| Fecha | 18-09-2026 |
-| Seq final | 131,412,017 |
-| Paquetes activos | 4,405,737 |
+| Date | 2026-09-18 |
+| Feed sequence | 131,412,017 |
+| Active packages | 4,405,737 |
 
-## Por que dos pasadas
+## Execution order
 
-El plan original usaba include_docs=true en el feed de replicacion para
-traer el documento completo de cada paquete en una sola pasada. Cloudflare
-lo bloquea (400 Bad Request, verificado en cuatro variantes). Sin ese
-parametro el feed solo entrega identidad, no contenidoo.
-
-La extraccion quedo dividida en dos:
-
-| Script | Fuente | Entrega | Tiempo |
+| Script | Reads | Writes | 
 |---|---|---|---|
-| pasada1.py | replicate.npmjs.com/_changes | nombre, seq, borrado | 6.9 min |
-| pasada2.py | registry.npmjs.org/pkg | deps, dev_deps, tarball | 3.5 h |
-| pasada3.py | local | aristas, Fan-In, Fan-Out | pendiente |
+| `tools/preflight_check.py` | `data/pasada1/` | stdout | 
+| `01_ingest_registry_index.py` | replication feed | `data/pasada1/` | 
+| `02_fetch_dependencies.py` | `data/pasada1/` | `data/pasada2/` | 
+| `03_build_dependency_graph.py` | `data/pasada2/` | `data/metricas_externas.csv` | 
+| `04_extract_profile.py` | `data/pasada1/` | `data/profile/` | 
+| `05_extract_downloads.py` | `data/pasada1/` | `data/downloads/` | 
+| `06_build_full_graph.py` | `pasada2/` + `profile/` | full graph table | 
+| `07_analyze_profile.py` | all of the above | `results/REPORT.md` | 
 
-El cursor seq permite reanudar sin perder
-progreso.
+Passes 02, 04 and 05 all read the index from 01 and are independent of each
+other. Pass 04 does not require 02, which is why it can run on a separate
+machine. Pass 06 supersedes 03 by adding peer and optional edge types,
+which come from 04.
 
-## Resultados
+## Why three sources instead of one
 
-Pasada 1 -- feed de replicacion completo desde seq=0
+The replication feed supports `include_docs=true`, which would return the
+full document for every package in a single paginated walk. Cloudflare
+returns 400 for that parameter — verified 2026-09-18 in four variants
+(with and without `limit`, reversed order, `limit=1`).
 
-| | |
-|---|---|
+Without it the feed yields only identity, so content is requested per
+package from the registry API, and download counts from a third API.
 
-| Eventos totales | 6,433,267 |
-| Paquetes activos | 4,405,737 |
-| Paquetes borrados | 2,027,530 (31.5%) |
-| Con  @org/ | 1,703,010 (38.7%) |
-| Shards | 65 |
+## Methodological decisions
 
-Pasada 2 -- contenido por paquete
+- **Prod/dev dependency counts live only in the graph passes.** Pass 04
+  omits them to avoid two versions of the same measure taken on different
+  dates.
+- **Peer and optional edge lists are kept.** Fan-out follows from a count,
+  fan-in does not: it needs to know which package points where.
+- **404 responses are not nodes.** A package that no longer exists cannot
+  receive fan-in; references to it are recorded as dangling.
+- **Packages without a usable version are nodes.** They receive fan-in but
+  produce no fan-out.
+- **Names are normalised** with `strip().lower()` in every pass, so tables
+  join correctly.
+- **`deprecated` is truthy-only.** npm un-deprecates by setting an empty
+  string, so key presence alone is insufficient.
 
-| | |
-|---|---|
-| Con version utilizable | 4,394,970 |
-| Sin version | 1,280 |
-| Despublicados entre pasadas | 9,486 (0.22%) |
-| Con tarball | 100% |
-| Sin dependencias declaradas | 1,704,447 (38.8%) |
-| Shards | 89 |
 
-## Decisiones metodologicas
+## Resuming
 
-- repository descartado. No viene en el formato abreviado y traerlo
-  duplicaba la transferencia. El tarball si viene y es la ruta acordada
-  para obtener codigo fuente.
-- deps y dev_deps en campos separados, nunca mezclados. Permite
-  calcular ambos grafos sin re-descargar.
-- Formato abreviado (Accept: application/vnd.npm.install-v1+json):
-  57.8% menos transferencia, medido sobre express (809 KB a 341 KB).
-- Recorrido completo desde seq=0, incluyendo historial de borrados.
-- 404 no son nodos. Un paquete despublicado no existe; si alguien lo
-  declara como dependencia, aparece como referencia colgante.
-- sin_version si son nodos. Reciben Fan-In pero no generan Fan-Out.
+Passes 02, 04 and 05 write an atomic checkpoint with `fsync` after each
+shard. `Ctrl+C` once flushes the current shard and saves; re-running the
+same command resumes. Worst case loss is one shard.
 
-## Datos
+## Data
 
-Los shards no estan en el repositorio (~2 GB). Descarga:
-
-    [https://drive.google.com/drive/folders/1P4nBb1kxQjd_7do0P_UITV4nXLhzqcTQ?usp=sharing]
-
-Descomprimir en data/ manteniendo la estructura data/pasada1/ y
-data/pasada2/.
-
-## Pendiente
-
-- pasada3.py -- construir aristas, normalizar nombres, detectar colgantes,
-  calcular Fan-In/Fan-Out global
-- Validar contra Wittern et al. (2016): Fan-In=0 a 72.5%, Fan-In>=6 a 4.9%,
-  con >=1 dependencia a 81.3%
-- Corregir la cifra de la Introduccion del Charter: dice "mas de 2 millones"
-  citando npm; medimos 4,405,737
-
-## Uso
-
-    python3 pasada1.py
-    python3 pasada2.py
-    python3 pasada3.py
-
-Ambas pasadas guardan checkpoint atomico. Si se cortan, volver a correr
-el mismo comando retoma donde quedo.
+Shards are not in the repository. See release notes for download links.
