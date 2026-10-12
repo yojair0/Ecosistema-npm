@@ -152,7 +152,9 @@ def has_github(repo):
     """
     if not repo:
         return False
-    url = repo.get("url", "") if isinstance(repo, dict) else str(repo)
+    url = repo.get("url", "") if isinstance(repo, dict) else repo
+    if not isinstance(url, str):
+        return False
     url = url.strip()
     if not url:
         return False
@@ -271,7 +273,12 @@ FETCH = fetch_latest if MODE == "latest" else fetch_full
 
 def work(name):
     time.sleep(PAUSE)
-    return FETCH(name)
+    try:
+        return FETCH(name)
+    except Exception as e:
+        # Malformed metadata must not stop a multi-hour walk.
+        return {"name": name, "_status": "parse_error",
+                "detail": f"{type(e).__name__}: {str(e)[:60]}"}
 
 
 def flush(buf, shard):
