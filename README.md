@@ -65,3 +65,6 @@ same command resumes. Worst case loss is one shard.
 ## Data
 
 Shards are not in the repository. See release notes for download links.
+## Reference package list
+
+The replication feed exposes each package only at the sequence of its latest change, so a past state of the registry cannot be rebuilt. The list of 4,405,737 live packages from 2026-09-18 is the reference set for every pass and is distributed with the data rather than regenerated.
