@@ -63,7 +63,7 @@ def main():
         print(f"Iniciando desde cero. Tope: {TOPE:,}\n")
 
     fallos = 0
-    while c["since"] < TOPE:
+    while True:
         try:
             d = pedir(c["since"])
             fallos = 0
