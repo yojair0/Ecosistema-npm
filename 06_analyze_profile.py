@@ -6,15 +6,22 @@ Joins the package profile (pass 04) with prod/dev fan-in and fan-out
 (pass 03), derives fan-in for peer and optional dependencies, and writes
 the report requested in the meeting notes:
 
-  1. coverage of the profile over the reference package list
-  2. descriptive statistics of every variable
-  3. Spearman correlation of each variable with fan-in and fan-out
-  4. redundant pairs (|rho| > 0.8)
-  5. age as a confounder of fan-in
-  6. the one-year eligibility window
-  7. the fan-in / fan-out zero grid
-  8. 1-D k-means strata on log(fan-in + 1) against Horgan's geometric
-     boundaries, with profile coverage per stratum
+  1.  coverage of the profile over the reference package list
+  2.  descriptive statistics of every variable
+  3.  Spearman correlation of each variable with fan-in and fan-out
+       (full universe and fan-in > 0 subset)
+  4.  redundant pairs (|rho| > 0.8)
+  5.  age as a confounder: direct comparison >= 5 years vs < 1 year
+  6.  the one-year eligibility window (fan-in and fan-out)
+  7.  the fan-in / fan-out zero grid with profile coverage per quadrant
+  8.  fan-in and fan-out by profile availability
+  9.  fan-in and fan-out by binary groups
+  10. deprecation rate by fan-in range
+  11. median fan-in and fan-out by creation year
+  12. median fan-in and fan-out by decile of n_versions, n_maintainers,
+      n_keywords (mode group reported separately)
+  13. outliers: packages before 2009 and monthly distribution of modified
+  14. full Spearman correlation matrix
 
 Works with whichever profile parts are present and flags partial coverage,
 so it can be re-run unchanged once every part has been fetched.
@@ -33,7 +40,6 @@ from collections import Counter
 
 import numpy as np
 import pandas as pd
-from sklearn.cluster import KMeans
 
 GRAPH_CSV = "data/metricas_externas.csv"
 PARTS = {
@@ -43,7 +49,6 @@ PARTS = {
 OUT_DIR = "results"
 SNAPSHOT = pd.Timestamp("2026-09-18", tz="UTC")    # fan-in measured here
 COLLECTION = pd.Timestamp("2026-10-10", tz="UTC")  # profile collected here
-K_STRATA = 4
 TOP_FAN_IN = 1000
 
 FIELDS = ["n_peer", "n_opt", "n_maintainers", "deprecated", "n_keywords",
@@ -144,8 +149,10 @@ def main():
     modified = pd.to_datetime(df["modified"], utc=True, errors="coerce")
     df["age_days"] = (SNAPSHOT - created).dt.days
     df["days_since_mod"] = (COLLECTION - modified).dt.days
+    mod_month = modified.dt.to_period("M")
     neg_age = int((df["age_days"] < 0).sum())
     df.loc[df["age_days"] < 0, "age_days"] = np.nan
+    df["creation_year"] = created.dt.year
     df["scoped"] = df["package"].str.startswith("@").astype(int)
     for c in ("deprecated", "has_github"):
         df[c] = df[c].map({True: 1, False: 0})
@@ -215,19 +222,28 @@ def main():
     corr = prof_df[["fan_in", "fan_out"] + VARS].corr(method="spearman")
 
     w("## 3. Spearman correlation with fan-in and fan-out\n")
-    w("Variables with moderate or high association help clusters follow "
-      "network position; those near zero cut across it. Selecting variables "
-      "by their association with the outcome must be reported as such.\n")
-    w("| Variable | rho fan-in | rho fan-out | verdict |\n|---|---|---|---|")
+    w("### 3a. All packages with profile\n")
+    w("| Variable | rho fan-in | rho fan-out |\n|---|---|---|")
     ranked = []
     for v in VARS:
         ri, ro = corr.loc[v, "fan_in"], corr.loc[v, "fan_out"]
         m = max(abs(ri), abs(ro))
-        verdict = ("keep" if m >= .30 else
-                   "borderline" if m >= .15 else "cuts across")
-        ranked.append((m, v, ri, ro, verdict))
-    for _, v, ri, ro, verdict in sorted(ranked, reverse=True):
-        w(f"| {v} | {ri:+.3f} | {ro:+.3f} | {verdict} |")
+        ranked.append((m, v, ri, ro))
+    for _, v, ri, ro in sorted(ranked, reverse=True):
+        w(f"| {v} | {ri:+.3f} | {ro:+.3f} |")
+    w("")
+
+    prof_pos = prof_df[prof_df["fan_in"] > 0]
+    corr_pos = prof_pos[["fan_in", "fan_out"] + VARS].corr(method="spearman")
+    w(f"### 3b. Packages with fan-in > 0 (n={len(prof_pos):,})\n")
+    w("| Variable | rho fan-in | rho fan-out |\n|---|---|---|")
+    ranked_pos = []
+    for v in VARS:
+        ri, ro = corr_pos.loc[v, "fan_in"], corr_pos.loc[v, "fan_out"]
+        m = max(abs(ri), abs(ro))
+        ranked_pos.append((m, v, ri, ro))
+    for _, v, ri, ro in sorted(ranked_pos, reverse=True):
+        w(f"| {v} | {ri:+.3f} | {ro:+.3f} |")
     w("")
 
     # ------------------------------------------------------ 4. redundancy
@@ -245,27 +261,36 @@ def main():
     w("")
 
     # ------------------------------------------------------ 5. confounder
-    r_age = corr.loc["age_days", "fan_in"]
-    w("## 5. Age as a confounder of fan-in\n")
-    w(f"Spearman(age, fan-in) = **{r_age:+.3f}**.\n")
-    if abs(r_age) >= .30:
-        w("Fan-in accumulates with time. Age must enter the model as a "
-          "control; otherwise the fan-in = 0 stratum mixes never-adopted "
-          "packages with recently published ones.\n")
-    elif abs(r_age) >= .15:
-        w("Moderate association; controlling for age is advisable.\n")
-    else:
-        w("Weak association; age does not appear to confound fan-in.\n")
+    r_age_fi = corr.loc["age_days", "fan_in"]
+    r_age_fo = corr.loc["age_days", "fan_out"]
+    w("## 5. Age as a confounder of fan-in and fan-out\n")
+    w(f"Spearman(age, fan-in) = **{r_age_fi:+.3f}**. "
+      f"Spearman(age, fan-out) = **{r_age_fo:+.3f}**.\n")
+    w("The Spearman coefficient is suppressed by the zero mass (>83% of "
+      "packages have fan-in = 0). The table below compares adoption rates "
+      "directly across age groups.\n")
+    age_fi = prof_df["age_days"].dropna()
+    old_mask = age_fi >= 5 * 365
+    new_mask = age_fi < 365
+    pct_old = (prof_df.loc[old_mask.index[old_mask], "fan_in"] > 0).mean() * 100
+    pct_new = (prof_df.loc[new_mask.index[new_mask], "fan_in"] > 0).mean() * 100
+    w("| Age group | n | % with fan-in > 0 |\n|---|---|---|")
+    w(f"| >= 5 years | {int(old_mask.sum()):,} | {pct_old:.1f}% |")
+    w(f"| < 1 year | {int(new_mask.sum()):,} | {pct_new:.1f}% |")
+    w("")
 
     # -------------------------------------------------- 6. one-year window
     w("## 6. One-year eligibility window\n")
-    w("| Age at snapshot | packages | share | median fan-in | fan-in = 0 |")
-    w("|---|---|---|---|---|")
+    w("| Age at snapshot | packages | share | median fan-in | fan-in = 0 | "
+      "median fan-out | fan-out = 0 |")
+    w("|---|---|---|---|---|---|---|")
     age = prof_df["age_days"]
     for lbl, m in [(">= 1 year", age >= 365), ("< 1 year", age < 365)]:
-        s = prof_df.loc[m, "fan_in"]
-        w(f"| {lbl} | {len(s):,} | {len(s) / len(prof_df) * 100:.1f}% | "
-          f"{s.median():,.0f} | {(s == 0).mean() * 100:.1f}% |")
+        fi = prof_df.loc[m, "fan_in"]
+        fo = prof_df.loc[m, "fan_out"]
+        w(f"| {lbl} | {len(fi):,} | {len(fi) / len(prof_df) * 100:.1f}% | "
+          f"{fi.median():,.0f} | {(fi == 0).mean() * 100:.1f}% | "
+          f"{fo.median():,.0f} | {(fo == 0).mean() * 100:.1f}% |")
     w("")
 
     # ----------------------------------------------------- 7. zero grid
@@ -275,57 +300,175 @@ def main():
 
     def cell(mask):
         k = int(mask.sum())
-        return f"{k:,} ({k / n * 100:.1f}%)"
+        cov = df.loc[mask, "has_profile"].mean() * 100 if k else 0.0
+        return f"{k:,} ({k / n * 100:.1f}%) — {cov:.1f}% with profile"
 
     w("| | fan-out = 0 | fan-out > 0 |\n|---|---|---|")
     w(f"| **fan-in = 0** | {cell(fi0 & fo0)} | {cell(fi0 & ~fo0)} |")
     w(f"| **fan-in > 0** | {cell(~fi0 & fo0)} | {cell(~fi0 & ~fo0)} |\n")
 
-    # -------------------------------------------------------- 8. strata
-    log("exploring strata")
-    pos = df[df["fan_in"] > 0]
-    x = np.log1p(pos["fan_in"].to_numpy()).reshape(-1, 1)
-
-    w("## 8. Strata on log(fan-in + 1), fan-in > 0\n")
-    w(f"{len(pos):,} packages. Fan-in = 0 is kept as its own stratum (0): as "
-      f"a single point mass it cannot be clustered.\n")
-    w("### Elbow\n\n| k | inertia |\n|---|---|")
-    for k in range(2, 9):
-        km = KMeans(n_clusters=k, n_init=10, random_state=42).fit(x)
-        w(f"| {k} | {km.inertia_:,.0f} |")
+    # ----------------------------------------- 8. with / without profile
+    log("computing group comparisons")
+    w("## 8. Fan-in and fan-out by profile availability (all nodes)\n")
+    w("| has_profile | n | median fan-in | % fan-in > 0 | "
+      "median fan-in (>0) | median fan-out | % fan-out = 0 |")
+    w("|---|---|---|---|---|---|---|")
+    for val, label in [(True, "yes"), (False, "no")]:
+        sub = df[df["has_profile"] == val]
+        fi = sub["fan_in"]
+        fo = sub["fan_out"]
+        fi_pos = fi[fi > 0]
+        med_fi_pos = fi_pos.median() if len(fi_pos) else float("nan")
+        w(f"| {label} | {len(sub):,} | {fi.median():,.0f} | "
+          f"{(fi > 0).mean() * 100:.1f}% | {med_fi_pos:,.0f} | "
+          f"{fo.median():,.0f} | {(fo == 0).mean() * 100:.1f}% |")
     w("")
 
-    km = KMeans(n_clusters=K_STRATA, n_init=10, random_state=42).fit(x)
-    order = np.argsort(km.cluster_centers_.ravel())
-    rank = {c: i + 1 for i, c in enumerate(order)}
-    df["stratum"] = 0
-    df.loc[pos.index, "stratum"] = [rank[c] for c in km.labels_]
-
-    w(f"### k-means (k={K_STRATA}) with profile coverage\n")
-    w("| Stratum | fan-in range | packages | with profile | "
-      ">= 1 year (of profiled) |\n|---|---|---|---|---|")
-    for s in range(K_STRATA + 1):
-        sub = df[df["stratum"] == s]
-        if sub.empty:
-            continue
-        ps = sub[sub["has_profile"]]
-        old = (ps["age_days"] >= 365).mean() * 100 if len(ps) else float("nan")
-        w(f"| {s} | {sub['fan_in'].min():,} - {sub['fan_in'].max():,} | "
-          f"{len(sub):,} | {sub['has_profile'].mean() * 100:.1f}% | "
-          f"{old:.1f}% |")
+    # ----------------------------------------- 9. binary group comparisons
+    w("## 9. Fan-in and fan-out by binary groups (packages with profile)\n")
+    w("| Group | value | n | median fan-in | % fan-in > 0 | "
+      "median fan-in (>0) | median fan-out | % fan-out = 0 |")
+    w("|---|---|---|---|---|---|---|---|")
+    for col in ("scoped", "deprecated", "has_github"):
+        for val, label in [(1, "yes"), (0, "no")]:
+            sub = prof_df[prof_df[col] == val]
+            fi = sub["fan_in"]
+            fo = sub["fan_out"]
+            fi_pos = fi[fi > 0]
+            med_fi_pos = fi_pos.median() if len(fi_pos) else float("nan")
+            w(f"| {col} | {label} | {len(sub):,} | {fi.median():,.0f} | "
+              f"{(fi > 0).mean() * 100:.1f}% | {med_fi_pos:,.0f} | "
+              f"{fo.median():,.0f} | {(fo == 0).mean() * 100:.1f}% |")
+    has_kw = prof_df["n_keywords"] > 0
+    for val, label in [(True, "yes"), (False, "no")]:
+        sub = prof_df[has_kw == val]
+        fi = sub["fan_in"]
+        fo = sub["fan_out"]
+        fi_pos = fi[fi > 0]
+        med_fi_pos = fi_pos.median() if len(fi_pos) else float("nan")
+        w(f"| has_keywords | {label} | {len(sub):,} | {fi.median():,.0f} | "
+          f"{(fi > 0).mean() * 100:.1f}% | {med_fi_pos:,.0f} | "
+          f"{fo.median():,.0f} | {(fo == 0).mean() * 100:.1f}% |")
     w("")
 
-    fi = pos["fan_in"].to_numpy()
-    lo_, hi_ = fi.min(), fi.max()
-    r = (hi_ / lo_) ** (1 / K_STRATA)
-    edges = [lo_] + [lo_ * r ** h for h in range(1, K_STRATA)] + [hi_ + 1]
-    w(f"### Horgan geometric boundaries (L={K_STRATA})\n")
-    w("| Stratum | fan-in range | packages |\n|---|---|---|")
-    for i, (lo, hi) in enumerate(zip(edges[:-1], edges[1:]), 1):
-        cnt = int(((fi >= lo) & (fi < hi)).sum())
-        w(f"| {i} | {lo:,.0f} to <{hi:,.0f} | {cnt:,} |")
-    w("\nIf both methods place their boundaries close together, the strata "
-      "are supported by two independent criteria.\n")
+    # --------------------------------------- 10. deprecation rate by fan_in
+    w("## 10. Deprecation rate by fan-in range (packages with profile)\n")
+    fi_bins = [0, 1, 10, 100, 1000, 10000, np.inf]
+    fi_labels = ["0", "1–9", "10–99", "100–999", "1000–9999", "≥ 10000"]
+    fi_range = pd.cut(
+        prof_df["fan_in"], bins=fi_bins, labels=fi_labels, right=False,
+    )
+    w("| fan-in range | n | deprecation rate |")
+    w("|---|---|---|")
+    for lbl in fi_labels:
+        sub = prof_df[fi_range == lbl]
+        rate = sub["deprecated"].mean() * 100 if len(sub) else float("nan")
+        w(f"| {lbl} | {len(sub):,} | {rate:.2f}% |")
+    w("")
+
+    # --------------------------------------- 11. median by creation year
+    w("## 11. Median fan-in and fan-out by creation year (packages with profile)\n")
+    w("| year | n | median fan-in | % fan-in > 0 | "
+      "median fan-in (>0) | median fan-out | % fan-out = 0 |")
+    w("|---|---|---|---|---|---|---|")
+    for yr, grp in prof_df.groupby("creation_year"):
+        fi = grp["fan_in"]
+        fo = grp["fan_out"]
+        fi_pos = fi[fi > 0]
+        med_fi_pos = fi_pos.median() if len(fi_pos) else float("nan")
+        w(f"| {int(yr)} | {len(grp):,} | {fi.median():,.0f} | "
+          f"{(fi > 0).mean() * 100:.1f}% | {med_fi_pos:,.0f} | "
+          f"{fo.median():,.0f} | {(fo == 0).mean() * 100:.1f}% |")
+    w("")
+
+    # ------------------------------------------ 12. deciles with mode apart
+    w("## 12. Median fan-in and fan-out by decile (packages with profile)\n")
+    w("Mode group is reported separately; deciles are computed on the rest. "
+      "Duplicate cut points are dropped.\n")
+    for col in ("n_versions", "n_maintainers", "n_keywords"):
+        valid = prof_df[prof_df[col].notna()]
+        mode_val = valid[col].value_counts().idxmax()
+        mode_grp = valid[valid[col] == mode_val]
+        rest = valid[valid[col] != mode_val].copy()
+        fi_m = mode_grp["fan_in"]
+        fo_m = mode_grp["fan_out"]
+        fi_m_pos = fi_m[fi_m > 0]
+        med_fi_m_pos = fi_m_pos.median() if len(fi_m_pos) else float("nan")
+        w(f"### {col} (mode = {mode_val}, n = {len(mode_grp):,})\n")
+        w(f"| range | n | median fan-in | % fan-in > 0 | "
+          f"median fan-in (>0) | median fan-out | % fan-out = 0 |")
+        w("|---|---|---|---|---|---|---|")
+        w(f"| mode={mode_val} | {len(mode_grp):,} | {fi_m.median():,.0f} | "
+          f"{(fi_m > 0).mean() * 100:.1f}% | {med_fi_m_pos:,.0f} | "
+          f"{fo_m.median():,.0f} | {(fo_m == 0).mean() * 100:.1f}% |")
+        if len(rest) > 0:
+            try:
+                rest["_decile"] = pd.qcut(rest[col], q=10, duplicates="drop")
+                for interval, grp in rest.groupby("_decile", observed=True):
+                    fi = grp["fan_in"]
+                    fo = grp["fan_out"]
+                    fi_pos = fi[fi > 0]
+                    med_fi_pos = fi_pos.median() if len(fi_pos) else float("nan")
+                    w(f"| {interval} | {len(grp):,} | {fi.median():,.0f} | "
+                      f"{(fi > 0).mean() * 100:.1f}% | {med_fi_pos:,.0f} | "
+                      f"{fo.median():,.0f} | {(fo == 0).mean() * 100:.1f}% |")
+            except ValueError as exc:
+                w(f"| _(deciles unavailable: {exc})_ | | | | | | |")
+        w("")
+
+    # ----------------------------------------------- 13. outliers
+    w("## 13. Outliers (descriptive only, no packages removed)\n")
+
+    old_pkg = prof_df[prof_df["creation_year"] < 2009]
+    w("### Packages with creation date before 2009\n")
+    min_yr = int(old_pkg["creation_year"].min()) if len(old_pkg) > 0 else None
+    epoch_note = (
+        f" Earliest year found: {min_yr}"
+        + (" (Unix epoch artefact)" if min_yr == 1970 else "") + "."
+    ) if min_yr else ""
+    w(f"{len(old_pkg):,} packages in the profile have a creation year before "
+      f"2009.{epoch_note}\n")
+    if len(old_pkg) > 0:
+        yr_counts = old_pkg["creation_year"].value_counts().sort_index()
+        w("| year | n |\n|---|---|")
+        for yr, cnt in yr_counts.items():
+            w(f"| {int(yr)} | {cnt:,} |")
+    w("")
+
+    mod_prof = mod_month.loc[prof_df.index].dropna()
+    mod_counts = mod_prof.value_counts().sort_values(ascending=False)
+    w("### Monthly distribution of last-modified date "
+      "(packages with profile, top 20 by count)\n")
+    w("April to June 2022 are expected to show anomalous counts due to "
+      "mass metadata updates unrelated to actual package changes.\n")
+    w("**days_since_mod is not a reliable recency indicator** because of "
+      "these bulk updates; interpret it with caution throughout the "
+      "report.\n")
+    w("| month | n |\n|---|---|")
+    for period, cnt in mod_counts.head(20).items():
+        w(f"| {period} | {cnt:,} |")
+    w("")
+
+    # ------------------------------------------ 14. full correlation matrix
+    CORR_ALL = [
+        "fan_in", "fan_out", "fan_in_dev", "fan_out_dev",
+        "fan_in_peer", "fan_in_opt",
+        "fan_out_peer", "fan_out_opt",
+        "age_days", "days_since_mod",
+        "n_versions", "n_maintainers", "n_keywords",
+        "file_count", "unpacked",
+        "deprecated", "has_github", "scoped",
+    ]
+    corr_all = corr.loc[CORR_ALL, CORR_ALL]
+    w("## 14. Full Spearman correlation matrix (packages with profile)\n")
+    w("_days_since_mod is not reliable: mass metadata updates from April to "
+      "June 2022 concentrate the distribution artificially._\n")
+    w("| |" + "".join(f" {c} |" for c in CORR_ALL))
+    w("|---|" + "".join("---|" for _ in CORR_ALL))
+    for row in CORR_ALL:
+        cells = "".join(f" {corr_all.loc[row, c]:+.2f} |" for c in CORR_ALL)
+        w(f"| {row} |{cells}")
+    w("")
 
     # ---------------------------------------------------------- outputs
     out_md = f"{OUT_DIR}/profile_report.md"
