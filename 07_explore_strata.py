@@ -19,13 +19,14 @@ below no substantial structure.
 Name-based exclusions are pre-filters. Whether a package holds JavaScript
 that can be analysed is settled later, on its published tarball.
 
-Input : results/profile_table.parquet   (pass 06)
-        data/pasada2/*.jsonl             (dependency lists, pass 02)
-Output: results/strata_report.md
-        results/strata_table.parquet
+Input : data/06_profile_analysis/profile_table.parquet   (pass 06)
+        data/pasada2/*.jsonl                               (dependency lists, pass 02)
+Output: data/07_strata_analysis/strata_report.md
+        data/07_strata_analysis/strata_table.parquet
 """
 import glob
 import json
+import os
 import re
 import time
 from collections import Counter
@@ -36,10 +37,11 @@ from sklearn.cluster import MiniBatchKMeans
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 
-TABLE = "results/profile_table.parquet"
+TABLE = "data/06_profile_analysis/profile_table.parquet"
 DEPS_DIR = "data/pasada2"
-OUT_MD = "results/strata_report.md"
-OUT_TABLE = "results/strata_table.parquet"
+OUT_DIR = "data/07_strata_analysis"
+OUT_MD = f"{OUT_DIR}/strata_report.md"
+OUT_TABLE = f"{OUT_DIR}/strata_table.parquet"
 
 SPAM_SHARE = 0.5      # more than half of the declared dependencies missing
 SPAM_MIN_DEPS = 10    # below this, a single typo would flag a package
@@ -103,6 +105,7 @@ def scan_dependencies(nodes):
 
 
 def main():
+    os.makedirs(OUT_DIR, exist_ok=True)
     lines = []
     w = lines.append
 

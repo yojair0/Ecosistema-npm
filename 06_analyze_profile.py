@@ -26,11 +26,11 @@ the report requested in the meeting notes:
 Works with whichever profile parts are present and flags partial coverage,
 so it can be re-run unchanged once every part has been fetched.
 
-Input : data/metricas_externas.csv
-        vm_results/data/profile/*.jsonl          (part 1)
-        vm_results/part2/data/profile/*.jsonl    (part 2, optional)
-Output: results/profile_report.md
-        results/profile_table.parquet
+Input : data/03_dependency_graph/graph_metrics.csv
+        data/04_profile/part1/*.jsonl            (part 1)
+        data/04_profile/part2/*.jsonl            (part 2, optional)
+Output: data/06_profile_analysis/profile_report.md
+        data/06_profile_analysis/profile_table.parquet
 """
 import glob
 import json
@@ -41,12 +41,12 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-GRAPH_CSV = "data/metricas_externas.csv"
+GRAPH_CSV = "data/03_dependency_graph/graph_metrics.csv"
 PARTS = {
-    "part 1": "vm_results/data",
-    "part 2": "vm_results/part2/data",
+    "part 1": "data/04_profile/part1",
+    "part 2": "data/04_profile/part2",
 }
-OUT_DIR = "data/profile_analysis"
+OUT_DIR = "data/06_profile_analysis"
 TABLES_DIR = os.path.join(OUT_DIR, "tables")
 SNAPSHOT = pd.Timestamp("2026-09-18", tz="UTC")    # fan-in measured here
 COLLECTION = pd.Timestamp("2026-10-10", tz="UTC")  # profile collected here
@@ -113,7 +113,7 @@ def load_profiles(nodes):
     seen, found, dup = set(), [], 0
 
     for label, base in PARTS.items():
-        files = sorted(glob.glob(f"{base}/profile/*.jsonl"))
+        files = sorted(glob.glob(f"{base}/*.jsonl"))
         if not files:
             continue
         found.append(label)
@@ -151,7 +151,7 @@ def main():
 
     prof, fi_peer, fi_opt, found, dup = load_profiles(nodes)
     if not found:
-        raise SystemExit("No profile shards found under vm_results/.")
+        raise SystemExit("No profile shards found under data/04_profile/.")
     log(f"  {len(prof):,} profiles, {dup:,} duplicates skipped")
 
     g["fan_in_peer"] = g["package"].map(fi_peer).fillna(0).astype(int)

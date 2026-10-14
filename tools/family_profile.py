@@ -18,9 +18,11 @@ It also splits every package's fan-in into internal and external, and
 reports how many packages would change stratum if strata used external
 fan-in only.
 
-Input : results/profile_table.parquet, results/strata_table.parquet,
+Input : data/06_profile_analysis/profile_table.parquet,
+        data/07_strata_analysis/strata_table.parquet,
         data/pasada2/*.jsonl
-Output: results/family_profile.csv, results/fan_in_split.parquet
+Output: data/07_strata_analysis/family_profile.csv,
+        data/07_strata_analysis/fan_in_split.parquet
 """
 import glob
 import json
@@ -47,10 +49,10 @@ def decade(fi, fo):
                       fi < 1000], STRATA[:5], default=STRATA[5])
 
 
-prof = pd.read_parquet("results/profile_table.parquet",
+prof = pd.read_parquet("data/06_profile_analysis/profile_table.parquet",
                        columns=["package", "fan_in", "fan_out", "n_versions",
                                 "age_days"])
-st = pd.read_parquet("results/strata_table.parquet",
+st = pd.read_parquet("data/07_strata_analysis/strata_table.parquet",
                      columns=["package", "stratum_decade", "eligible",
                               "excluded"])
 df = prof.merge(st, on="package")
@@ -96,7 +98,7 @@ fam = pd.DataFrame({
 busiest = sc.groupby(["scope", "created_day"]).size().groupby(level=0).max()
 fam["burst"] = (busiest / fam["packages"]).round(3)
 fam = fam.sort_values("packages", ascending=False)
-fam.to_csv("results/family_profile.csv", encoding="utf-8-sig")
+fam.to_csv("data/07_strata_analysis/family_profile.csv", encoding="utf-8-sig")
 
 print(f"\nFamilies with {MIN_FAMILY}+ packages: {len(fam):,}, holding "
       f"{fam['packages'].sum():,} packages "
@@ -113,5 +115,5 @@ print(f"\nPackages that change stratum with external fan-in only: {len(moved):,}
 print(pd.crosstab(moved["stratum_decade"], moved["stratum_external"]).to_string())
 
 df[["package", "fan_in_internal", "fan_in_external", "stratum_external"]] \
-    .to_parquet("results/fan_in_split.parquet", index=False)
-print("\nWrote results/family_profile.csv and results/fan_in_split.parquet")
+    .to_parquet("data/07_strata_analysis/fan_in_split.parquet", index=False)
+print("\nWrote data/07_strata_analysis/family_profile.csv and data/07_strata_analysis/fan_in_split.parquet")

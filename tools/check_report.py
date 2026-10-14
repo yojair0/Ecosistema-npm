@@ -7,7 +7,7 @@ from sklearn.cluster import KMeans
 SNAPSHOT = pd.Timestamp("2026-09-18")
 COLLECTION = pd.Timestamp("2026-10-10")
 
-df = pd.read_parquet("results/profile_table.parquet")
+df = pd.read_parquet("data/06_profile_analysis/profile_table.parquet")
 p = df[df["has_profile"]]
 
 created = SNAPSHOT - pd.to_timedelta(p["age_days"], unit="D")

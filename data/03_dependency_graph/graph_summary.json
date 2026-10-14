@@ -1,0 +1,15 @@
+{
+  "fecha": "2026-09-21 11:56",
+  "snapshot_seq": 131412017,
+  "nodos": 4395451,
+  "con_version": 4394173,
+  "sin_version": 1280,
+  "descartados_404": 9487,
+  "aristas_deps": 19830671,
+  "aristas_devdeps": 24333987,
+  "colgantes_distintos": 40102,
+  "colgantes_refs": 3498784,
+  "fan_in_cero_pct": 83.55,
+  "fan_in_6mas_pct": 2.83,
+  "con_1dep_pct": 61.22
+}

@@ -11,7 +11,7 @@ Packages that cannot be profiled are classified during the walk and written
 to a separate file, so no later filtering pass is needed.
 
 Input : data/pasada1/*.jsonl          (id, seq, deleted)
-Output: data/profile/shard_NNNNN.jsonl
+Output: data/04_profile/shard_NNNNN.jsonl
         data/profile_problems.jsonl
         data/profile_run_meta.json
 State : data/checkpoint_profile.json  (resumable, Ctrl+C once)
@@ -29,12 +29,12 @@ import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 
 from config import (SNAPSHOT_SEQ, SNAPSHOT_DATE, NAMES_CACHE,
-                    DIR_INDEX, USER_AGENT)
+                    DIR_INDEX, DIR_PROFILE, USER_AGENT)
 
 MODE     = "full"
 
 IN_DIR   = DIR_INDEX
-OUT_DIR  = "data/profile"
+OUT_DIR  = DIR_PROFILE
 PROBLEMS = "data/profile_problems.jsonl"
 CKPT     = "data/checkpoint_profile.json"
 META     = "data/profile_run_meta.json"

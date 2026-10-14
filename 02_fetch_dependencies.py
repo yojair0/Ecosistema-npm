@@ -16,10 +16,12 @@ import json, os, time, glob, signal, sys
 import urllib.request, urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 
+from config import NAMES_CACHE
+
 IN_DIR   = "data/pasada1"
 OUT_DIR  = "data/pasada2"
 CKPT     = "data/checkpoint2.json"
-NOMBRES  = "data/nombres_ordenados.json"
+NOMBRES  = NAMES_CACHE
 
 SHARD_N  = 50_000
 WORKERS  = 16       # medido: 8 workers -> 15 paq/s con 0.4% error

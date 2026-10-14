@@ -18,10 +18,10 @@ three questions, with criteria fixed before looking at the results:
 Only account names are kept; e-mail addresses are never stored. The fetch
 runs once; later runs reuse the saved sample and only rebuild the report.
 
-Input : data/nombres_ordenados.json      reference list, 2026-09-18
-        results/strata_table.parquet     optional, for spam flags
+Input : data/names_sorted.json             reference list, 2026-09-18
+        data/07_strata_analysis/strata_table.parquet  optional, for spam flags
 Output: data/audit_sample.jsonl
-        results/audit_report.md
+        data/07_strata_analysis/audit_report.md
 """
 import json
 import math
@@ -35,10 +35,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 
-NAMES = "data/nombres_ordenados.json"
-STRATA = "results/strata_table.parquet"
+NAMES = "data/names_sorted.json"
+STRATA = "data/07_strata_analysis/strata_table.parquet"
 OUT_JSONL = "data/audit_sample.jsonl"
-OUT_MD = "results/audit_report.md"
+OUT_MD = "data/07_strata_analysis/audit_report.md"
 N_SAMPLE = 10_000
 SEED = 42
 WORKERS = 16
@@ -204,7 +204,7 @@ def main():
             for r in rows:
                 f.write(json.dumps(r, ensure_ascii=False) + "\n")
         df = pd.DataFrame(rows)
-    os.makedirs("results", exist_ok=True)
+    os.makedirs("data/07_strata_analysis", exist_ok=True)
     report(df)
 
 

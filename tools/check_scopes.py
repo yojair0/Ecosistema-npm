@@ -8,8 +8,8 @@ Second follow-up on the registry audit.
   2. Census of the largest scopes, with eligible counts and an example
      name, to spot generated families.
 
-Input : data/audit_sample.jsonl, vm_results/**/profile/*.jsonl,
-        results/strata_table.parquet
+Input : data/audit_sample.jsonl, data/04_profile/**/*.jsonl,
+        data/07_strata_analysis/strata_table.parquet
 """
 import glob
 import json
@@ -20,8 +20,8 @@ a = pd.read_json("data/audit_sample.jsonl", lines=True)
 npm_names = set(a.loc[a["publisher"] == "npm", "name"].str.strip().str.lower())
 
 latest = {}
-paths = (glob.glob("vm_results/data/profile/*.jsonl")
-         + glob.glob("vm_results/part2/data/profile/*.jsonl"))
+paths = (glob.glob("data/04_profile/part1/*.jsonl")
+         + glob.glob("data/04_profile/part2/*.jsonl"))
 for path in paths:
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -34,7 +34,7 @@ print(f"Sampled packages published by npm: {len(npm_names)}; "
 print("Their latest versions:")
 print(pd.Series(latest).value_counts().head(10).to_string())
 
-st = pd.read_parquet("results/strata_table.parquet",
+st = pd.read_parquet("data/07_strata_analysis/strata_table.parquet",
                      columns=["package", "eligible"])
 scoped = st[st["package"].str.startswith("@")].copy()
 scoped["scope"] = scoped["package"].str.split("/").str[0]

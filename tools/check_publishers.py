@@ -7,7 +7,7 @@ Follow-up on the registry audit.
      profile, and shows their strata and eligibility.
   2. Lists sample names from the heaviest personal accounts.
 
-Input : vm_results/**/profile/*.jsonl, results/strata_table.parquet,
+Input : data/04_profile/**/*.jsonl, data/07_strata_analysis/strata_table.parquet,
         data/audit_sample.jsonl
 """
 import glob
@@ -19,8 +19,8 @@ ACCOUNTS = ["terryfei", "mipta19", "miptaa02", "mipppp",
             "mayangsario", "rajhsinggg", "bedlaj"]
 
 rows = []
-paths = (glob.glob("vm_results/data/profile/*.jsonl")
-         + glob.glob("vm_results/part2/data/profile/*.jsonl"))
+paths = (glob.glob("data/04_profile/part1/*.jsonl")
+         + glob.glob("data/04_profile/part2/*.jsonl"))
 for path in paths:
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -34,7 +34,7 @@ if len(ph):
     ph["year"] = pd.to_datetime(ph["created"], utc=True, errors="coerce").dt.year
     print("\nBy creation year:")
     print(ph["year"].value_counts().sort_index().to_string())
-    st = pd.read_parquet("results/strata_table.parquet",
+    st = pd.read_parquet("data/07_strata_analysis/strata_table.parquet",
                          columns=["package", "stratum_decade", "eligible"])
     m = ph.merge(st, on="package", how="left")
     print("\nBy stratum:")

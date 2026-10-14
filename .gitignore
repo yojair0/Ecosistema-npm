@@ -1,13 +1,13 @@
-﻿*.jsonl
-nombres_ordenados.json
-checkpoint*.json
 __pycache__/
 *.pyc
 *.zip
 pruebas/
-resultados/
-vm_results/
-results/
-data/*
-!data/profile_analysis/
-data/profile_analysis/*.parquet
+checkpoint*.json
+
+# Heavy data — not tracked
+data/pasada1/
+data/pasada2/
+data/04_profile/
+*.parquet
+*.jsonl
+data/03_dependency_graph/graph_metrics.csv

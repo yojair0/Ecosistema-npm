@@ -6,10 +6,10 @@ Cubre pasos 4 (aristas), 5 (normalizar), 6 (colgantes) y 10 (Fan-In/Out).
 Entrada: data/pasada2/*.jsonl
 
 Salidas:
-  data/metricas_externas.csv   tabla final por paquete
-  data/colgantes.txt           destinos inexistentes, por frecuencia
-  data/resumen_grafo.json      estadisticas del grafo
-  data/aristas.jsonl           aristas individuales (src, dst, tipo)
+  data/03_dependency_graph/graph_metrics.csv   tabla final por paquete
+  data/03_dependency_graph/dangling_deps.txt   destinos inexistentes, por frecuencia
+  data/03_dependency_graph/graph_summary.json  estadisticas del grafo
+  data/03_dependency_graph/edges.jsonl         aristas individuales (src, dst, tipo)
 
 No consulta internet. Procesamiento local.
 """
@@ -18,10 +18,11 @@ from collections import Counter
 from config import SNAPSHOT_SEQ
 
 IN_DIR      = "data/pasada2"
-OUT_CSV     = "data/metricas_externas.csv"
-OUT_COLG    = "data/colgantes.txt"
-OUT_RES     = "data/resumen_grafo.json"
-OUT_ARISTAS = "data/aristas.jsonl"
+OUT_DIR     = "data/03_dependency_graph"
+OUT_CSV     = f"{OUT_DIR}/graph_metrics.csv"
+OUT_COLG    = f"{OUT_DIR}/dangling_deps.txt"
+OUT_RES     = f"{OUT_DIR}/graph_summary.json"
+OUT_ARISTAS = f"{OUT_DIR}/edges.jsonl"
 
 
 def norm(nombre):
@@ -30,6 +31,7 @@ def norm(nombre):
 
 
 def main():
+    os.makedirs(OUT_DIR, exist_ok=True)
     t0 = time.time()
 
     # ---- 1. Cargar nodos y dependencias ------------------------------
