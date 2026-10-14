@@ -1,0 +1,4 @@
+group,n,pct_fi_pos,median_fi_pos,median_fo,pct_fo_zero,pct_one_version,pct_github,pct_scoped
+≥ 365 días,3485940,16.88,1.0,1.0,36.31,37.35,57.75,33.02
+< 365 días,898901,14.84,1.0,1.0,48.21,35.82,69.15,59.7
+sin edad,4395,12.06,1.0,0.0,55.59,44.6,77.75,59.23

@@ -1,0 +1,16 @@
+variable,p999,n_above
+fan_in,471.0,4382
+fan_out,371.0,2055
+fan_in_dev,238.0,4389
+fan_out_dev,79.0,4269
+fan_in_peer,26.0,4292
+fan_out_peer,18.0,4364
+fan_in_opt,2.0,3357
+fan_out_opt,6.0,3548
+age_days,5409.0,4380
+days_since_mod,1649.0,1820
+n_versions,1469.0,4374
+n_maintainers,33.0,3994
+n_keywords,50.0,4355
+file_count,7975.88000000082,3902
+unpacked,233714328.40000048,3902

@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-10-14 15:51",
+  "reference_dates": {
+    "snapshot": "2026-09-18",
+    "collection": "2026-10-10"
+  },
+  "thresholds": {
+    "top_fan_in": 1000,
+    "fan_in_bins": [
+      "0",
+      "1",
+      "10",
+      "100",
+      "1000",
+      "inf"
+    ],
+    "fan_in_labels": [
+      "0",
+      "1\u20139",
+      "10\u201399",
+      "100\u2013999",
+      "\u2265 1000"
+    ],
+    "fan_out_bins": [
+      "0",
+      "1",
+      "3",
+      "10",
+      "50",
+      "inf"
+    ],
+    "fan_out_labels": [
+      "0",
+      "1\u20132",
+      "3\u20139",
+      "10\u201349",
+      "\u2265 50"
+    ],
+    "age_window": 365
+  },
+  "input_rows": {
+    "graph_nodes": 4395451,
+    "with_profile": 4389236,
+    "without_profile": 6215
+  },
+  "lib_versions": {
+    "pandas": "2.3.3",
+    "numpy": "2.4.0",
+    "pyarrow": "26.0.0"
+  }
+}

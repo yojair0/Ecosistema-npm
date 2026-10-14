@@ -1,12 +1,13 @@
-﻿data/
-*.jsonl
+﻿*.jsonl
 nombres_ordenados.json
 checkpoint*.json
 __pycache__/
 *.pyc
 *.zip
-
 pruebas/
 resultados/
 vm_results/
 results/
+data/*
+!data/profile_analysis/
+data/profile_analysis/*.parquet

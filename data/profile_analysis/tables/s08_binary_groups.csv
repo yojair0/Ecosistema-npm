@@ -1,0 +1,9 @@
+group,value,n,median_fan_in,pct_fi_pos,median_fan_in_pos,median_fan_out,pct_fo_zero
+scoped,yes,1690379,0.0,23.67,1.0,1.0,35.81
+scoped,no,2698857,0.0,11.93,1.0,1.0,40.63
+deprecated,yes,136070,0.0,24.19,1.0,1.0,34.41
+deprecated,no,4253166,0.0,16.21,1.0,1.0,38.91
+has_github,yes,2638061,0.0,18.95,2.0,1.0,37.82
+has_github,no,1751175,0.0,12.69,1.0,1.0,40.2
+has_keywords,yes,2130034,0.0,17.29,2.0,1.0,37.27
+has_keywords,no,2259202,0.0,15.66,1.0,1.0,40.18
