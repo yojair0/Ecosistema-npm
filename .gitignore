@@ -12,3 +12,5 @@ data/04_profile/
 *.jsonl
 data/03_dependency_graph/graph_metrics.csv
 data/names_sorted.json
+!data/profile_problems.jsonl
+!data/audit_sample.jsonl
