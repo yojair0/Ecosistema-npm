@@ -111,22 +111,22 @@ def main():
 
     log("loading profile table")
     df = pd.read_parquet(TABLE)
-    nodes = set(df["package"])
+    nodes = set(df["name"])
 
     log("scanning dependency lists (a few minutes)")
     declared, missing, from_spam = scan_dependencies(nodes)
-    df["n_deps_declared"] = df["package"].map(declared)
-    df["n_deps_missing"] = df["package"].map(missing)
+    df["n_deps_declared"] = df["name"].map(declared)
+    df["n_deps_missing"] = df["name"].map(missing)
     df["dangling_share"] = df["n_deps_missing"] / df["n_deps_declared"]
     df["spam_suspect"] = ((df["dangling_share"] > SPAM_SHARE)
                           & (df["n_deps_declared"] >= SPAM_MIN_DEPS))
-    df["fan_in_from_spam"] = df["package"].map(from_spam).fillna(0).astype(int)
+    df["fan_in_from_spam"] = df["name"].map(from_spam).fillna(0).astype(int)
     df["spam_propagated"] = ((df["fan_in"] > 0)
                              & (df["fan_in_from_spam"] / df["fan_in"].clip(lower=1)
                                 > SPAM_SHARE)
                              & ~df["spam_suspect"])
-    df["types_only"] = df["package"].str.startswith("@types/")
-    df["platform_binary"] = df["package"].str.contains(PLATFORM, regex=True)
+    df["types_only"] = df["name"].str.startswith("@types/")
+    df["platform_binary"] = df["name"].str.contains(PLATFORM, regex=True)
     df["excluded"] = df[EXCLUSIONS].any(axis=1)
 
     fi, fo = df["fan_in"], df["fan_out"]
@@ -245,7 +245,7 @@ def main():
 
     with open(OUT_MD, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
-    keep = ["package", "stratum_decade", "dangling_share", "fan_in_from_spam",
+    keep = ["name", "stratum_decade", "dangling_share", "fan_in_from_spam",
             *EXCLUSIONS, "excluded", "eligible", "role"]
     df[keep].to_parquet(OUT_TABLE, index=False)
     log(f"wrote {OUT_MD} and {OUT_TABLE}")

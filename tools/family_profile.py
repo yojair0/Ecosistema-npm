@@ -50,13 +50,13 @@ def decade(fi, fo):
 
 
 prof = pd.read_parquet("data/06_profile_analysis/profile_table.parquet",
-                       columns=["package", "fan_in", "fan_out", "n_versions",
+                       columns=["name", "fan_in", "fan_out", "n_versions",
                                 "age_days"])
 st = pd.read_parquet("data/07_strata_analysis/strata_table.parquet",
-                     columns=["package", "stratum_decade", "eligible",
+                     columns=["name", "stratum_decade", "eligible",
                               "excluded"])
-df = prof.merge(st, on="package")
-nodes = set(df["package"])
+df = prof.merge(st, on="name")
+nodes = set(df["name"])
 
 print("Scanning dependency lists for intra-family edges...")
 internal = Counter()
@@ -75,9 +75,9 @@ for path in sorted(glob.glob("data/pasada2/*.jsonl")):
                 if t in nodes and scope_of(t) == s:
                     internal[t] += 1
 
-df["fan_in_internal"] = df["package"].map(internal).fillna(0).astype(int)
+df["fan_in_internal"] = df["name"].map(internal).fillna(0).astype(int)
 df["fan_in_external"] = df["fan_in"] - df["fan_in_internal"]
-df["scope"] = df["package"].map(scope_of)
+df["scope"] = df["name"].map(scope_of)
 df["created_day"] = (SNAPSHOT - pd.to_timedelta(df["age_days"], unit="D")).dt.date
 df["one_version"] = df["n_versions"] == 1
 
@@ -114,6 +114,6 @@ moved = df[df["stratum_external"] != df["stratum_decade"]]
 print(f"\nPackages that change stratum with external fan-in only: {len(moved):,}")
 print(pd.crosstab(moved["stratum_decade"], moved["stratum_external"]).to_string())
 
-df[["package", "fan_in_internal", "fan_in_external", "stratum_external"]] \
+df[["name", "fan_in_internal", "fan_in_external", "stratum_external"]] \
     .to_parquet("data/07_strata_analysis/fan_in_split.parquet", index=False)
 print("\nWrote data/07_strata_analysis/family_profile.csv and data/07_strata_analysis/fan_in_split.parquet")

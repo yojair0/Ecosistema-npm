@@ -26,7 +26,7 @@ for path in paths:
         for line in f:
             d = json.loads(line)
             if d.get("latest") == "0.0.1-security":
-                rows.append({"package": d["name"], "created": d.get("created")})
+                rows.append({"name": d["name"], "created": d.get("created")})
 
 ph = pd.DataFrame(rows)
 print(f"Latest version 0.0.1-security: {len(ph):,}")
@@ -35,11 +35,11 @@ if len(ph):
     print("\nBy creation year:")
     print(ph["year"].value_counts().sort_index().to_string())
     st = pd.read_parquet("data/07_strata_analysis/strata_table.parquet",
-                         columns=["package", "stratum_decade", "eligible"])
-    m = ph.merge(st, on="package", how="left")
+                         columns=["name", "stratum_decade", "eligible"])
+    m = ph.merge(st, on="name", how="left")
     print("\nBy stratum:")
     print(m.groupby("stratum_decade")
-           .agg(packages=("package", "size"), eligible=("eligible", "sum"))
+           .agg(packages=("name", "size"), eligible=("eligible", "sum"))
            .to_string())
 
 a = pd.read_json("data/audit_sample.jsonl", lines=True)

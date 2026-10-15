@@ -121,9 +121,9 @@ def report(df):
 
     spam_known = os.path.exists(STRATA)
     if spam_known:
-        st = pd.read_parquet(STRATA, columns=["package", "spam_suspect",
+        st = pd.read_parquet(STRATA, columns=["name", "spam_suspect",
                                               "spam_propagated"])
-        flag = dict(zip(st["package"], st["spam_suspect"] | st["spam_propagated"]))
+        flag = dict(zip(st["name"], st["spam_suspect"] | st["spam_propagated"]))
         ok["spam"] = ok["name"].str.strip().str.lower().map(flag)
 
     # ---------------------------------------------------------------- A

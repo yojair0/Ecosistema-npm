@@ -35,11 +35,11 @@ print("Their latest versions:")
 print(pd.Series(latest).value_counts().head(10).to_string())
 
 st = pd.read_parquet("data/07_strata_analysis/strata_table.parquet",
-                     columns=["package", "eligible"])
-scoped = st[st["package"].str.startswith("@")].copy()
-scoped["scope"] = scoped["package"].str.split("/").str[0]
-g = scoped.groupby("scope").agg(packages=("package", "size"),
+                     columns=["name", "eligible"])
+scoped = st[st["name"].str.startswith("@")].copy()
+scoped["scope"] = scoped["name"].str.split("/").str[0]
+g = scoped.groupby("scope").agg(packages=("name", "size"),
                                 eligible=("eligible", "sum"),
-                                example=("package", "first"))
+                                example=("name", "first"))
 print("\nLargest scopes:")
 print(g.sort_values("packages", ascending=False).head(30).to_string())

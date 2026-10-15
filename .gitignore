@@ -11,3 +11,4 @@ data/04_profile/
 *.parquet
 *.jsonl
 data/03_dependency_graph/graph_metrics.csv
+data/names_sorted.json
