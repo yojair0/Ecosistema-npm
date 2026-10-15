@@ -1,0 +1,32 @@
+{
+  "part1": {
+    "snapshot_seq": 131412017,
+    "snapshot_date": "2026-09-18",
+    "mode": "full",
+    "started_at": "2026-10-08T18:41:39-0400",
+    "finished_at": "2026-10-10T11:48:53-0400",
+    "packages_processed": 4202596,
+    "counts": {
+      "ok": 4191178,
+      "gone": 9479,
+      "no_versions": 1913,
+      "latest_missing": 20,
+      "no_latest_tag": 6
+    },
+    "shards": 85
+  },
+  "part2": {
+    "snapshot_seq": 131412017,
+    "snapshot_date": "2026-09-18",
+    "mode": "full",
+    "started_at": "2026-10-12T04:25:19-0400",
+    "finished_at": "2026-10-12T06:58:31-0400",
+    "packages_processed": 204302,
+    "counts": {
+      "ok": 200019,
+      "no_versions": 1685,
+      "gone": 2598
+    },
+    "shards": 5
+  }
+}
