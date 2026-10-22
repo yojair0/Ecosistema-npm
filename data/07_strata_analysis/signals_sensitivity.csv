@@ -1,5 +1,5 @@
 rule,params,flagged,flagged_fan_in_100_plus,half_a,half_b,references_flagged
-spam_declarer,"share>0.3, deps>=5",20042,133,10083,9959,none
+spam_declarer,"share>0.3, deps>=5",20043,133,10083,9960,none
 spam_declarer,"share>0.3, deps>=10",16913,110,8518,8395,none
 spam_declarer,"share>0.3, deps>=15",16134,107,8116,8018,none
 spam_declarer,"share>0.5, deps>=5",16274,93,8189,8085,none
@@ -8,24 +8,27 @@ spam_declarer,"share>0.5, deps>=15",15080,75,7613,7467,none
 spam_declarer,"share>0.7, deps>=5",14536,79,7309,7227,none
 spam_declarer,"share>0.7, deps>=10",14195,70,7144,7051,none
 spam_declarer,"share>0.7, deps>=15",13869,70,6993,6876,none
-coordinated_core,"deps>=10, span<=60d, recent<=0.005",6797,2435,3350,3447,none
-coordinated_core,"deps>=10, span<=60d, recent<=0.02",6798,2436,3350,3448,none
-coordinated_core,"deps>=10, span<=120d, recent<=0.005",8588,3115,4232,4356,none
-coordinated_core,"deps>=10, span<=120d, recent<=0.02",8589,3116,4232,4357,none
-coordinated_core,"deps>=10, span<=180d, recent<=0.005",8904,3139,4389,4515,none
-coordinated_core,"deps>=10, span<=180d, recent<=0.02",8909,3144,4393,4516,none
-coordinated_core,"deps>=20, span<=60d, recent<=0.005",5296,2435,2590,2706,none
-coordinated_core,"deps>=20, span<=60d, recent<=0.02",5297,2436,2590,2707,none
-coordinated_core,"deps>=20, span<=120d, recent<=0.005",6796,3115,3317,3479,none
-coordinated_core,"deps>=20, span<=120d, recent<=0.02",6797,3116,3317,3480,none
-coordinated_core,"deps>=20, span<=180d, recent<=0.005",6960,3139,3400,3560,none
-coordinated_core,"deps>=20, span<=180d, recent<=0.02",6965,3144,3404,3561,none
-coordinated_core,"deps>=50, span<=60d, recent<=0.005",3669,2411,1789,1880,none
-coordinated_core,"deps>=50, span<=60d, recent<=0.02",3670,2412,1789,1881,none
-coordinated_core,"deps>=50, span<=120d, recent<=0.005",4659,3091,2264,2395,none
-coordinated_core,"deps>=50, span<=120d, recent<=0.02",4660,3092,2264,2396,none
-coordinated_core,"deps>=50, span<=180d, recent<=0.005",4719,3115,2294,2425,none
-coordinated_core,"deps>=50, span<=180d, recent<=0.02",4724,3120,2298,2426,none
-colluded_dependent,share>=0.3,211064,0,105825,105239,none
-colluded_dependent,share>=0.5,206316,0,103465,102851,none
-colluded_dependent,share>=0.7,189917,0,95214,94703,none
+coordinated_burst,"deps>=10, span<=60d, recent<=0.005",6796,2435,3350,3446,none
+coordinated_burst,"deps>=10, span<=60d, recent<=0.02",6797,2436,3350,3447,none
+coordinated_burst,"deps>=10, span<=120d, recent<=0.005",8588,3115,4232,4356,none
+coordinated_burst,"deps>=10, span<=120d, recent<=0.02",8589,3116,4232,4357,none
+coordinated_burst,"deps>=10, span<=180d, recent<=0.005",8903,3139,4389,4514,none
+coordinated_burst,"deps>=10, span<=180d, recent<=0.02",8908,3144,4393,4515,none
+coordinated_burst,"deps>=20, span<=60d, recent<=0.005",5295,2435,2590,2705,none
+coordinated_burst,"deps>=20, span<=60d, recent<=0.02",5296,2436,2590,2706,none
+coordinated_burst,"deps>=20, span<=120d, recent<=0.005",6796,3115,3317,3479,none
+coordinated_burst,"deps>=20, span<=120d, recent<=0.02",6797,3116,3317,3480,none
+coordinated_burst,"deps>=20, span<=180d, recent<=0.005",6959,3139,3400,3559,none
+coordinated_burst,"deps>=20, span<=180d, recent<=0.02",6964,3144,3404,3560,none
+coordinated_burst,"deps>=50, span<=60d, recent<=0.005",3669,2411,1789,1880,none
+coordinated_burst,"deps>=50, span<=60d, recent<=0.02",3670,2412,1789,1881,none
+coordinated_burst,"deps>=50, span<=120d, recent<=0.005",4659,3091,2264,2395,none
+coordinated_burst,"deps>=50, span<=120d, recent<=0.02",4660,3092,2264,2396,none
+coordinated_burst,"deps>=50, span<=180d, recent<=0.005",4719,3115,2294,2425,none
+coordinated_burst,"deps>=50, span<=180d, recent<=0.02",4724,3120,2298,2426,none
+coordinated_core,"burst, not a victim (lag<180d)",6662,3038,3244,3418,none
+coordinated_core,"burst, not a victim (lag<365d)",6695,3054,3260,3435,none
+coordinated_core,"burst, not a victim (lag<730d)",6731,3080,3281,3450,none
+colluded_dependent,share>=0.3,211054,0,105821,105233,none
+colluded_dependent,share>=0.5,206309,0,103462,102847,none
+colluded_dependent,share>=0.7,189912,0,95212,94700,none
