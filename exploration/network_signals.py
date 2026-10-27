@@ -72,10 +72,10 @@ from array import array
 import numpy as np
 import pandas as pd
 
-PROFILE = "data/06_profile_analysis/profile_table.parquet"
-DEPS = "data/pasada2/*.jsonl"
-SHARDS = "data/04_profile/part*/*.jsonl"
-OUT = "data/07_strata_analysis"
+PROFILE = "../data/06_profile_analysis/profile_table.parquet"
+DEPS = "../data/pasada2/*.jsonl"
+SHARDS = "../data/04_profile/part*/*.jsonl"
+OUT = "../data/07_strata_analysis"
 FIGURES = f"{OUT}/figures"
 SNAPSHOT = pd.Timestamp("2026-09-18")
 

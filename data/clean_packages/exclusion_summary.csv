@@ -1,0 +1,15 @@
+criterion,expected,obtained,difference,only_this_criterion,pct_universe
+no_graph,0,0,0,0,0.0
+no_profile,6215,6215,0,5068,0.1414
+name_collision,787,787,0,768,0.0179
+pre2010,1,1,0,1,0.0
+no_date,3,0,-3,0,0.0
+post_snapshot,941,941,0,631,0.0214
+no_version,1280,1279,-1,7,0.0291
+types_only,11401,11401,0,11401,0.2594
+platform_binary,52562,52562,0,52247,1.1958
+security_placeholder,155255,155248,-7,154546,3.532
+dgb_500,59363,59363,0,59363,1.3506
+TOTAL_EXCLUDED,,285914,,,6.5048
+TOTAL_ELIGIBLE,,4109537,,,93.4952
+UNIVERSE,4395451,4395451,0,,100.0

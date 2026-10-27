@@ -1,0 +1,29 @@
+{
+  "executed_at": "2026-10-27 11:55:12",
+  "snapshot_date": "2026-09-18",
+  "dgb_params": {
+    "min_size": 500,
+    "max_window_days": 30,
+    "min_pct_one_version": 100
+  },
+  "platform_binary_re": "(linux|darwin|win32|windows|freebsd|openbsd|netbsd|android|sunos|aix)-(x64|x86|ia32|arm|arm64|ppc64|s390x|riscv64|loong64|mips64el|universal)",
+  "security_prefix": "0.0.1-security",
+  "paths": {
+    "pasada2": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\pasada2",
+    "graph_csv": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\03_dependency_graph\\graph_metrics.csv",
+    "profile_part1": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\04_profile\\part1",
+    "profile_part2": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\04_profile\\part2"
+  },
+  "profile_duplicates": 797,
+  "universe_duplicates": 799,
+  "pasada2_errors": 9487,
+  "security_p2_vs_profile_diff": 558,
+  "universe_size": 4395451,
+  "total_excluded": 285914,
+  "total_eligible": 4109537,
+  "versions": {
+    "pandas": "2.3.3",
+    "numpy": "2.4.0",
+    "pyarrow": "26.0.0"
+  }
+}
