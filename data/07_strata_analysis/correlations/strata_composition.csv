@@ -1,0 +1,13 @@
+stratum,set,packages,pct_one_version,median_files,median_age_years,pct_deprecated
+0a isolated,raw population,1505368,48.7,5.0,3.5,2.6
+0a isolated,frame,1071210,44.1,6.0,4.9,3.1
+0b consumer,raw population,2157791,35.6,13.0,3.4,3.0
+0b consumer,frame,1716358,27.9,13.0,5.0,3.5
+1-9,raw population,649593,17.6,13.0,4.3,4.5
+1-9,frame,341428,18.1,12.0,6.6,4.7
+10-99,raw population,58629,10.7,15.0,6.4,5.1
+10-99,frame,36417,4.8,15.0,8.6,5.7
+100-999,raw population,11344,19.7,11.0,7.6,4.9
+100-999,frame,7303,1.1,15.0,10.0,5.7
+>=1000,raw population,2116,13.2,13.0,10.3,3.4
+>=1000,frame,1611,0.7,12.5,11.3,4.3
