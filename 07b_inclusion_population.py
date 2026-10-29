@@ -194,7 +194,8 @@ def load_profile():
                     col_nver.append(int(rec.get("n_versions", 0)))
                     col_nmaint.append(int(rec.get("n_maintainers", 0)))
                     col_nkw.append(int(rec.get("n_keywords", 0)))
-                    col_keywords.append(rec.get("keywords") or [])
+                    raw_kw = rec.get("keywords") or []
+                    col_keywords.append([k for k in raw_kw if isinstance(k, str)])
                     col_npeer.append(int(rec.get("n_peer", 0)))
                     col_nopt.append(int(rec.get("n_opt", 0)))
                     col_github.append(
