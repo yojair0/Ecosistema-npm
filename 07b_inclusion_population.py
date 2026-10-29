@@ -1,3 +1,29 @@
+"""
+07b_inclusion_population.py -- packages that enter the study population.
+
+Population A applies every inclusion rule except the family rule; population
+B applies them all. fan_in_external adds a third situation: A with fan-in
+counted only from other scopes.
+
+Corrections in this version:
+  1. A pass 2 error is a query that failed, not a package that does not
+     exist: a dependency on it counts as existing.
+  2. A name collision is two different spellings that become equal in lower
+     case. The same package read twice, in pass 2 or in the profile, is not.
+  3. Depending on fs or http is not a bad dependency: npm holds security
+     placeholders under those names, but Node always loads its built-in module.
+  4. Security placeholders include every 0.0.x-security version.
+  5. Platform binaries include Rust targets, such as
+     @rustbin/cargo.target.x86_64-unknown-linux-gnu.
+  6. "Only this" for population A leaves out the family rule, which A does
+     not apply.
+  7. New columns fan_in_internal and fan_in_external: dependents from the
+     package's own scope and from elsewhere.
+
+FAMILY_MIN_SIZE stays at 2: exploration/family_threshold.py found that,
+among scopes with dependents, 72% to 83% depend mostly on themselves at
+every size from 2 packages up.
+"""
 import collections
 import hashlib
 import json
@@ -14,7 +40,13 @@ PLATFORM_BINARY_RE = (
     r"(linux|darwin|win32|windows|freebsd|openbsd|netbsd|android|sunos|aix)"
     r"-(x64|x86|ia32|arm|arm64|ppc64|s390x|riscv64|loong64|mips64el|universal)"
 )
-SECURITY_PREFIX = "0.0.1-security"
+_RUST_LONG = (r"x86_64|aarch64|i686|i586|armv7a|armv7r|armv7|arm64ec|riscv64gc|riscv64imac|"
+              r"powerpc64le|s390x|loongarch64|wasm32v1|wasm32")
+_RUST_SHORT = (r"arm|armv5te|armebv7r|thumbv\w+(?:\.\w+)?|powerpc64|powerpc|mips\w*|sparc\w*|"
+               r"riscv32\w*|nvptx64")
+RUST_TARGET_RE = (rf"(?:^|[-_/.])(?:(?:{_RUST_LONG})-|(?:{_RUST_SHORT})-"
+                  rf"(?:unknown|apple|pc|none|sun|linux|wrs|nvidia)-)")
+SECURITY_RE = r"^0\.0\.\d+-security"
 FAMILY_MIN_SIZE = 2
 NODE_PLACEHOLDER_NAMES = {"fs", "http"}
 
@@ -46,10 +78,11 @@ def flag_platform_binary(names):
             message=".*groups.*",
             category=UserWarning,
         )
-        return names.str.contains(PLATFORM_BINARY_RE, regex=True, na=False)
+        return (names.str.contains(PLATFORM_BINARY_RE, regex=True, na=False)
+                | names.str.contains(RUST_TARGET_RE, regex=True, na=False))
 
 def flag_security_placeholder(latest):
-    return latest.str.startswith(SECURITY_PREFIX, na=False)
+    return latest.str.contains(SECURITY_RE, regex=True, na=False)
 
 def flag_family(scope_size):
     return scope_size >= FAMILY_MIN_SIZE
@@ -63,7 +96,7 @@ DIR_PROFILE_2 = BASE / "data" / "04_profile" / "part2"
 
 # ── Data loaders ─────────────────────────────────────────────────────
 def load_universe():
-    # Returns (df, collision_names, rows_read, n_dupes, n_errors).
+    # Returns (df, collision_names, rows_read, n_dupes, n_errors, error_names).
     p2_dir = str(DIR_PASADA2)
     p2_files = sorted(f for f in os.listdir(p2_dir) if f.endswith(".jsonl"))
     col_name = []
@@ -72,14 +105,18 @@ def load_universe():
     col_tarball = []
     col_hash = []
     n_errors = 0
+    error_names = set()
+    originals = {}
     for fi, fname in enumerate(p2_files):
         with open(os.path.join(p2_dir, fname), encoding="utf-8") as fh:
             for line in fh:
                 rec = json.loads(line)
+                nm = rec["name"].strip().lower()
                 if rec.get("error"):
                     n_errors += 1
+                    error_names.add(nm)
                     continue
-                nm = rec["name"].strip().lower()
+                originals.setdefault(nm, set()).add(rec["name"])
                 col_name.append(nm)
                 col_sinver.append(1 if rec.get("sin_version") else 0)
                 col_latest.append(rec.get("latest", ""))
@@ -102,12 +139,14 @@ def load_universe():
         "dep_hash": col_hash,
     })
     del col_name, col_sinver, col_latest, col_tarball, col_hash
-    dup_mask = df.duplicated(subset="name", keep=False)
-    collision_names = set(df.loc[dup_mask, "name"])
+    # Two different spellings that become equal in lower case collide;
+    # the same package read twice does not.
+    collision_names = {n for n, spellings in originals.items() if len(spellings) > 1}
     n_before = len(df)
     df = df.drop_duplicates(subset="name", keep="first")
     n_dupes = n_before - len(df)
-    return df, collision_names, rows_read, n_dupes, n_errors
+    error_names -= set(df["name"])
+    return df, collision_names, rows_read, n_dupes, n_errors, error_names
 
 def load_graph():
     gm = pd.read_csv(
@@ -207,13 +246,19 @@ def load_profile():
     return prof, prof_dup_names, n_dupes
 
 def load_dependency_check(universe_names, security_names):
-    # Returns (dep_issues, placeholder_counter).
-    # dep_issues: dict name -> (n_missing, n_placeholder, only_node_placeholders)
+    # Returns (dep_issues, placeholder_counter, internal_fan_in, builtin_declarers).
+    # dep_issues: dict name -> (n_missing, n_placeholder, False); fs and http
+    #   are not counted, because Node loads its own built-in module first
     # placeholder_counter: Counter placeholder_name -> n_packages declaring it
+    # internal_fan_in: Counter name -> dependents from its own scope
+    # builtin_declarers: packages that declare fs or http
     p2_dir = str(DIR_PASADA2)
     p2_files = sorted(f for f in os.listdir(p2_dir) if f.endswith(".jsonl"))
     dep_issues = {}
     placeholder_counter = collections.Counter()
+    internal_fan_in = collections.Counter()
+    builtin_declarers = set()
+    seen = set()
     for fi, fname in enumerate(p2_files):
         with open(os.path.join(p2_dir, fname), encoding="utf-8") as fh:
             for line in fh:
@@ -224,6 +269,10 @@ def load_dependency_check(universe_names, security_names):
                 if not deps_raw:
                     continue
                 name = rec["name"].strip().lower()
+                if name in seen:
+                    continue
+                seen.add(name)
+                scope = scope_of(name)
                 n_missing = 0
                 n_placeholder = 0
                 pkg_placeholders = set()
@@ -231,19 +280,23 @@ def load_dependency_check(universe_names, security_names):
                     dn = d.strip().lower()
                     if dn not in universe_names:
                         n_missing += 1
-                    elif dn in security_names:
-                        n_placeholder += 1
+                        continue
+                    if scope and scope_of(dn) == scope:
+                        internal_fan_in[dn] += 1
+                    if dn in security_names:
                         pkg_placeholders.add(dn)
+                        if dn in NODE_PLACEHOLDER_NAMES:
+                            builtin_declarers.add(name)
+                        else:
+                            n_placeholder += 1
                 if n_missing > 0 or n_placeholder > 0:
-                    only_node = (n_missing == 0
-                                 and pkg_placeholders <= NODE_PLACEHOLDER_NAMES)
-                    dep_issues[name] = (n_missing, n_placeholder, only_node)
+                    dep_issues[name] = (n_missing, n_placeholder, False)
                 for pn in pkg_placeholders:
                     placeholder_counter[pn] += 1
         if (fi + 1) % 20 == 0 or fi + 1 == len(p2_files):
             print(f"  dep_check: {fi + 1}/{len(p2_files)} shards, "
                   f"{len(dep_issues):,} with issues")
-    return dep_issues, placeholder_counter
+    return dep_issues, placeholder_counter, internal_fan_in, builtin_declarers
 
 # ── Additional imports for main ──────────────────────────────────────
 import gc
@@ -267,15 +320,16 @@ CRITERIA_NO_FAMILY = [c for c in CRITERIA if c != "family"]
 CRITERION_DESC = {
     "no_graph":              "Not in dependency graph (expected 0)",
     "no_profile":            "No profile extracted",
-    "name_collision":        "Normalized name appears more than once",
+    "name_collision":        "Two different names become equal in lower case",
     "no_version":            "No dist-tags.latest or version missing",
     "pre2010":               "Created before 2010-01-01",
     "no_date":               "Has profile but no parseable creation date",
     "post_snapshot":         f"Created after {SNAPSHOT_DATE}",
     "types_only":            "Name starts with @types/",
-    "platform_binary":       "Name matches OS-architecture pattern",
-    "security_placeholder":  f"Latest starts with \"{SECURITY_PREFIX}\"",
-    "bad_dependency":        ">=1 production dep missing or is a security placeholder",
+    "platform_binary":       "Name matches OS-architecture pattern or a Rust target",
+    "security_placeholder":  "Latest version is 0.0.x-security",
+    "bad_dependency":        (">=1 production dep missing, or a security placeholder "
+                              "other than the Node built-ins fs and http"),
     "family":                f"Scope with >= {FAMILY_MIN_SIZE} packages",
 }
 
@@ -296,10 +350,10 @@ def md_part1(f, flags, ctx):
     f.write("## 1. Rules and parameters\n\n")
     f.write(f"- Snapshot date: {p['SNAPSHOT_DATE']}\n")
     f.write(f"- Family minimum size: {p['FAMILY_MIN_SIZE']}\n")
-    f.write(f"- Security prefix: `{p['SECURITY_PREFIX']}`\n")
-    f.write(f"- Node placeholder names: "
+    f.write(f"- Security pattern: `{p['SECURITY_RE']}`\n")
+    f.write(f"- Node built-ins not counted as bad dependencies: "
             f"{', '.join(sorted(p['NODE_PLACEHOLDER_NAMES']))}\n")
-    f.write(f"- Platform binary pattern: `{p['PLATFORM_BINARY_RE']}`\n\n")
+    f.write(f"- Platform binary patterns: `{p['PLATFORM_BINARY_RE']}` and the Rust targets\n\n")
     rule_rows = []
     for c in criteria:
         rule_rows.append((c, CRITERION_DESC[c]))
@@ -325,29 +379,23 @@ def md_part1(f, flags, ctx):
     f.write("## 3. By criterion\n\n")
     refs = {
         "no_profile": 6_215,
-        "name_collision": 787,
         "pre2010": 1,
         "no_date": 0,
         "post_snapshot": 941,
         "no_version": 1_279,
         "types_only": 11_401,
-        "platform_binary": 52_562,
-        "security_placeholder": 155_248,
         "family": 1_457_318,
     }
-    # compute only_this from flags
-    fail_count = flags[criteria].sum(axis=1)
-    only_this = {}
-    for c in criteria:
-        only_this[c] = int((flags[c] & (fail_count == 1)).sum())
-    del fail_count
+    # only_this: fails this criterion and no other that applies to A
+    only_this = ctx["only_this"]
     crit_rows = []
     for c in criteria:
         n_fail = int(flags[c].sum())
         ot = only_this[c]
         pct = f"{100 * n_fail / n_u:.2f}%"
-        if c == "bad_dependency":
-            ref_str = "~97,216"
+        if c in ("name_collision", "platform_binary", "security_placeholder",
+                 "bad_dependency"):
+            ref_str = "corrected rule"
             diff_str = ""
         elif c == "no_graph":
             ref_str = "0"
@@ -438,15 +486,18 @@ def md_part2(f, flags, ctx):
     f.write(f"- In A: {hf_in_a:,}\n")
     f.write(f"- In B: {hf_in_b:,}\n\n")
     del hf
-    # 5d. fan_in / fan_out comparison A vs B
-    f.write("### 5d. fan_in and fan_out comparison (A vs B)\n\n")
+    # 5d. fan_in / fan_out comparison: A, A_ext and B
+    f.write("### 5d. fan_in and fan_out comparison (A, A_ext, B)\n\n")
+    f.write("A_ext: population A, counting only dependents from other scopes.\n\n")
     a = flags[flags["in_A"]]
     b = flags[flags["in_B"]]
     stat_rows = []
     for col in ["fan_in", "fan_out"]:
-        for label, sub, n_sub in [("A", a, ctx["n_A"]),
-                                  ("B", b, ctx["n_B"])]:
-            s = sub[col]
+        sets = [("A", a, ctx["n_A"], col), ("B", b, ctx["n_B"], col)]
+        if col == "fan_in":
+            sets.insert(1, ("A_ext", a, ctx["n_A"], "fan_in_external"))
+        for label, sub, n_sub, source in sets:
+            s = sub[source]
             stat_rows.append((
                 col, label,
                 f"{s.mean():.2f}", f"{s.median():.0f}",
@@ -473,11 +524,13 @@ def md_part2(f, flags, ctx):
         for label, cond in bands:
             na = int(cond(a[col]).sum())
             nb = int(cond(b[col]).sum())
-            band_rows.append((label, f"{na:,}",
-                              f"{100 * na / ctx['n_A']:.1f}%",
-                              f"{nb:,}",
-                              f"{100 * nb / ctx['n_B']:.1f}%"))
-        md_table(f, ["Band", "A", "% A", "B", "% B"], band_rows)
+            row = [label, f"{na:,}", f"{100 * na / ctx['n_A']:.1f}%"]
+            if col == "fan_in":
+                ne = int(cond(a["fan_in_external"]).sum())
+                row += [f"{ne:,}", f"{100 * ne / ctx['n_A']:.1f}%"]
+            band_rows.append(tuple(row + [f"{nb:,}", f"{100 * nb / ctx['n_B']:.1f}%"]))
+        header = ["Band", "A", "% A"] + (["A_ext", "% A_ext"] if col == "fan_in" else [])
+        md_table(f, header + ["B", "% B"], band_rows)
     del a, b
     # ── 6. By creation year ──────────────────────────────────────
     f.write("## 6. By creation year\n\n")
@@ -520,13 +573,13 @@ def md_part2(f, flags, ctx):
         dep_band_rows.append((k, f"{band_dep[k]:,}"))
     dep_band_rows.append(("Total", f"{len(dep_info):,}"))
     md_table(f, ["Bad deps", "Packages"], dep_band_rows)
-    # 7b. Packages failing only because of fs/http
-    f.write("### 7b. Packages failing only due to Node builtins "
-            "(fs, http)\n\n")
-    only_node = {name for name, (_, _, on) in dep_info.items() if on}
-    f.write(f"Packages with only_node_placeholders = true: "
-            f"{len(only_node):,}\n\n")
-    # year distribution of only_node
+    # 7b. Packages that declare the Node built-ins fs or http
+    f.write("### 7b. Packages that declare Node built-ins (fs, http)\n\n")
+    only_node = ctx["builtin_declarers"]
+    f.write(f"Kept: npm holds security placeholders under those names, but Node "
+            f"loads its own built-in module. Packages declaring them: "
+            f"{len(only_node):,}; in A: {ctx['builtin_in_A']:,}.\n\n")
+    # year distribution of those packages
     on_mask = flags["name"].isin(only_node)
     on_years = flags.loc[on_mask, "created_year"].dropna()
     if len(on_years) > 0:
@@ -534,9 +587,9 @@ def md_part2(f, flags, ctx):
         on_year_rows = []
         for yr, cnt in yr_counts.items():
             on_year_rows.append((yr, f"{cnt:,}"))
-        md_table(f, ["Year", "Packages (only node builtins)"],
+        md_table(f, ["Year", "Packages declaring fs or http"],
                  on_year_rows)
-    del only_node, on_mask
+    del on_mask
     # 7c. Top 20 placeholders
     f.write("### 7c. Top 20 security placeholders declared "
             "as dependencies\n\n")
@@ -553,7 +606,9 @@ def md_part2(f, flags, ctx):
     f.write("- Scope size is counted over the universe before applying "
             "any other criterion.\n")
     f.write("- Packages with errors in pasada2 are not part of the "
-            "universe.\n")
+            "universe, but a dependency on one of them counts as existing.\n")
+    f.write("- fan_in_internal counts dependents from the package's own scope, "
+            "read from pasada2; fan_in_external is fan_in minus fan_in_internal.\n")
     f.write("- Dependency lists are not stored (only dep_hash and "
             "counts). Peer and optional dependency lists are also not "
             "stored (only n_peer and n_opt).\n")
@@ -593,8 +648,8 @@ def main():
 
     # ── 1. Load data ─────────────────────────────────────────────
     print("\n[1] Loading universe (pasada2 shards) ...")
-    universe, collision_names, rows_read, n_univ_dupes, n_errors = (
-        load_universe())
+    (universe, collision_names, rows_read, n_univ_dupes, n_errors,
+     error_names) = load_universe()
 
     print("\n[2] Loading graph_metrics.csv ...")
     graph = load_graph()
@@ -606,7 +661,7 @@ def main():
     n_prof_unique = len(profile)
     print(f"  Profile: {n_prof_unique:,} unique")
 
-    collision_names = collision_names | prof_dup_names
+    # Profile records read twice are dropped, not counted as collisions
     n_collision = len(collision_names)
     del prof_dup_names
 
@@ -657,10 +712,13 @@ def main():
     print("\n[5] Dependency check ...")
     sec_mask = flag_security_placeholder(df["latest_profile"])
     security_names = set(df.loc[sec_mask, "name"])
-    universe_names = set(df["name"])
-    dep_issues, placeholder_counter = load_dependency_check(
-        universe_names, security_names)
+    universe_names = set(df["name"]) | error_names
+    dep_issues, placeholder_counter, internal_fan_in, builtin_declarers = (
+        load_dependency_check(universe_names, security_names))
     del universe_names
+    df["fan_in_internal"] = df["name"].map(internal_fan_in).fillna(0).astype("int32")
+    df["fan_in_external"] = (df["fan_in"] - df["fan_in_internal"]).clip(lower=0).astype("int32")
+    del internal_fan_in
 
     # ── 4. Apply criteria ────────────────────────────────────────
     print("\n[6] Applying criteria ...")
@@ -688,12 +746,15 @@ def main():
     n_A = int(df["in_A"].sum())
     n_B = int(df["in_B"].sum())
 
-    # only_this (packages failing exactly one criterion)
-    fail_count = df[CRITERIA].sum(axis=1)
+    # only_this: fails this criterion and no other that applies to A;
+    # for the family rule, the packages that A keeps and B removes
+    fail_count = df[CRITERIA_NO_FAMILY].sum(axis=1)
     only_this = {}
-    for c in CRITERIA:
+    for c in CRITERIA_NO_FAMILY:
         only_this[c] = int((df[c] & (fail_count == 1)).sum())
+    only_this["family"] = n_A - n_B
     del fail_count
+    builtin_in_A = int(df.loc[df["in_A"], "name"].isin(builtin_declarers).sum())
 
     # ── 5. Console output ────────────────────────────────────────
     print("\n" + "=" * 70)
@@ -743,7 +804,8 @@ def main():
     pop_cols = [
         "name", "scope", "scope_size", "created_date", "created_year",
         "latest_profile", "latest_p2", "tarball",
-        "dep_hash", "fan_in", "fan_out", "fan_in_dev", "fan_out_dev",
+        "dep_hash", "fan_in", "fan_in_internal", "fan_in_external",
+        "fan_out", "fan_in_dev", "fan_out_dev",
         "n_versions", "n_maintainers", "deprecated", "has_github",
         "n_keywords", "keywords", "n_peer", "n_opt",
         "file_count", "unpacked",
@@ -766,7 +828,7 @@ def main():
     # inclusion_flags.parquet
     print("[9] Writing inclusion_flags.parquet ...")
     flags_cols = (["name", "scope", "scope_size", "created_year",
-                   "fan_in", "fan_out"] + CRITERIA + ["in_A", "in_B"])
+                   "fan_in", "fan_in_external", "fan_out"] + CRITERIA + ["in_A", "in_B"])
     flags = df[flags_cols].copy()
     write_parquet_chunked(flags, DIR_OUT / "inclusion_flags.parquet")
     del df; gc.collect()
@@ -780,7 +842,8 @@ def main():
             "FAMILY_MIN_SIZE": FAMILY_MIN_SIZE,
             "NODE_PLACEHOLDER_NAMES": sorted(NODE_PLACEHOLDER_NAMES),
             "PLATFORM_BINARY_RE": PLATFORM_BINARY_RE,
-            "SECURITY_PREFIX": SECURITY_PREFIX,
+            "RUST_TARGET_RE": RUST_TARGET_RE,
+            "SECURITY_RE": SECURITY_RE,
         },
         "paths": {
             "pasada2": str(DIR_PASADA2),
@@ -830,6 +893,9 @@ def main():
         "criteria": CRITERIA,
         "dep_info": dep_issues,
         "placeholder_counter": placeholder_counter,
+        "only_this": only_this,
+        "builtin_declarers": builtin_declarers,
+        "builtin_in_A": builtin_in_A,
     }
 
     print("[11] Writing inclusion_results.md ...")
