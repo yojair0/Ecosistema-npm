@@ -6,19 +6,28 @@ B applies them all. fan_in_external adds a third situation: A with fan-in
 counted only from other scopes.
 
 Corrections in this version:
-  1. A pass 2 error is a query that failed, not a package that does not
-     exist: a dependency on it counts as existing.
+  1. A pass 2 error with HTTP 404 means the package no longer exists, and a
+     dependency on it counts as missing. Any other error is a query that
+     failed, and a dependency on it counts as existing. Of the 9,487 errors,
+     9,486 are HTTP 404 and one is a 406; 07b_post_check.py confirmed that
+     9,484 of those packages do not exist.
   2. A name collision is two different spellings that become equal in lower
      case. The same package read twice, in pass 2 or in the profile, is not.
   3. Depending on fs or http is not a bad dependency: npm holds security
      placeholders under those names, but Node always loads its built-in module.
-  4. Security placeholders include every 0.0.x-security version.
+  4. Security placeholders include every 0.0.x-security version, and the
+     packages with another security version that npm's own text or account
+     confirms (resources/npm_placeholders_confirmed.txt, written by
+     exploration/check_security_versions.py). A security version alone is
+     not enough: some are real forks with security fixes.
   5. Platform binaries include Rust targets, such as
      @rustbin/cargo.target.x86_64-unknown-linux-gnu.
   6. "Only this" for population A leaves out the family rule, which A does
      not apply.
   7. New columns fan_in_internal and fan_in_external: dependents from the
      package's own scope and from elsewhere.
+  8. keywords are written as lists of text. Some manifests nest a list, or
+     put a number, inside their keywords, and pyarrow cannot write that.
 
 FAMILY_MIN_SIZE stays at 2: exploration/family_threshold.py found that,
 among scopes with dependents, 72% to 83% depend mostly on themselves at
@@ -58,6 +67,19 @@ def dep_list_hash(deps):
 def scope_of(name):
     return name.split("/")[0] if name.startswith("@") else ""
 
+def clean_keywords(kw):
+    # A list of text: a nested list is flattened one level, other values
+    # become text, and anything that is not a list becomes an empty list.
+    if not isinstance(kw, (list, tuple)):
+        return []
+    out = []
+    for k in kw:
+        if isinstance(k, (list, tuple)):
+            out.extend(str(x) for x in k if x is not None)
+        elif k is not None:
+            out.append(str(k))
+    return out
+
 # ── Criterion functions ──────────────────────────────────────────────
 def flag_pre2010(created_date):
     return created_date < date(2010, 1, 1)
@@ -93,6 +115,7 @@ DIR_PASADA2 = BASE / "data" / "pasada2"
 GRAPH_CSV = BASE / "data" / "03_dependency_graph" / "graph_metrics.csv"
 DIR_PROFILE_1 = BASE / "data" / "04_profile" / "part1"
 DIR_PROFILE_2 = BASE / "data" / "04_profile" / "part2"
+CONFIRMED_PLACEHOLDERS = BASE / "resources" / "npm_placeholders_confirmed.txt"
 
 # ── Data loaders ─────────────────────────────────────────────────────
 def load_universe():
@@ -114,7 +137,10 @@ def load_universe():
                 nm = rec["name"].strip().lower()
                 if rec.get("error"):
                     n_errors += 1
-                    error_names.add(nm)
+                    # HTTP 404: the package no longer exists. Any other error
+                    # is a query that failed, so the package may exist.
+                    if "404" not in str(rec["error"]):
+                        error_names.add(nm)
                     continue
                 originals.setdefault(nm, set()).add(rec["name"])
                 col_name.append(nm)
@@ -194,8 +220,7 @@ def load_profile():
                     col_nver.append(int(rec.get("n_versions", 0)))
                     col_nmaint.append(int(rec.get("n_maintainers", 0)))
                     col_nkw.append(int(rec.get("n_keywords", 0)))
-                    raw_kw = rec.get("keywords") or []
-                    col_keywords.append([k for k in raw_kw if isinstance(k, str)])
+                    col_keywords.append(rec.get("keywords") or [])
                     col_npeer.append(int(rec.get("n_peer", 0)))
                     col_nopt.append(int(rec.get("n_opt", 0)))
                     col_github.append(
@@ -328,7 +353,8 @@ CRITERION_DESC = {
     "post_snapshot":         f"Created after {SNAPSHOT_DATE}",
     "types_only":            "Name starts with @types/",
     "platform_binary":       "Name matches OS-architecture pattern or a Rust target",
-    "security_placeholder":  "Latest version is 0.0.x-security",
+    "security_placeholder":  ("Latest version is 0.0.x-security, or npm confirms it "
+                              "as a placeholder (resources list)"),
     "bad_dependency":        (">=1 production dep missing, or a security placeholder "
                               "other than the Node built-ins fs and http"),
     "family":                f"Scope with >= {FAMILY_MIN_SIZE} packages",
@@ -351,7 +377,8 @@ def md_part1(f, flags, ctx):
     f.write("## 1. Rules and parameters\n\n")
     f.write(f"- Snapshot date: {p['SNAPSHOT_DATE']}\n")
     f.write(f"- Family minimum size: {p['FAMILY_MIN_SIZE']}\n")
-    f.write(f"- Security pattern: `{p['SECURITY_RE']}`\n")
+    f.write(f"- Security pattern: `{p['SECURITY_RE']}`, plus "
+            f"{p['CONFIRMED_PLACEHOLDERS']:,} placeholders confirmed by npm\n")
     f.write(f"- Node built-ins not counted as bad dependencies: "
             f"{', '.join(sorted(p['NODE_PLACEHOLDER_NAMES']))}\n")
     f.write(f"- Platform binary patterns: `{p['PLATFORM_BINARY_RE']}` and the Rust targets\n\n")
@@ -606,8 +633,9 @@ def md_part2(f, flags, ctx):
             "excluded from the population.\n")
     f.write("- Scope size is counted over the universe before applying "
             "any other criterion.\n")
-    f.write("- Packages with errors in pasada2 are not part of the "
-            "universe, but a dependency on one of them counts as existing.\n")
+    f.write("- Packages with errors in pasada2 are not part of the universe. "
+            "A dependency on one of them counts as missing when the error was "
+            "a 404 (the package no longer exists), and as existing otherwise.\n")
     f.write("- fan_in_internal counts dependents from the package's own scope, "
             "read from pasada2; fan_in_external is fan_in minus fan_in_internal.\n")
     f.write("- Dependency lists are not stored (only dep_hash and "
@@ -698,8 +726,15 @@ def main():
         df[col] = df[col].fillna(0).astype("int32")
     df["has_github"] = df["has_github"].fillna(False)
     df["deprecated"] = df["deprecated"].fillna(False)
-    df["keywords"] = [
-        kw if isinstance(kw, list) else [] for kw in df["keywords"]]
+    cleaned, n_kw_fixed = [], 0
+    for kw in df["keywords"]:
+        c = clean_keywords(kw)
+        if isinstance(kw, list) and c != kw:
+            n_kw_fixed += 1
+        cleaned.append(c)
+    df["keywords"] = cleaned
+    del cleaned
+    print(f"  keywords cleaned (nested lists or non-text values): {n_kw_fixed:,}")
 
     # Scope and scope_size
     df["scope"] = df["name"].map(scope_of)
@@ -711,7 +746,12 @@ def main():
 
     # ── 3. Security names and dependency check ───────────────────
     print("\n[5] Dependency check ...")
-    sec_mask = flag_security_placeholder(df["latest_profile"])
+    confirmed = set()
+    if CONFIRMED_PLACEHOLDERS.exists():
+        confirmed = set(CONFIRMED_PLACEHOLDERS.read_text(encoding="utf-8").split())
+    print(f"  placeholders confirmed by npm (resources list): {len(confirmed):,}")
+    sec_mask = (flag_security_placeholder(df["latest_profile"])
+                | df["name"].isin(confirmed))
     security_names = set(df.loc[sec_mask, "name"])
     universe_names = set(df["name"]) | error_names
     dep_issues, placeholder_counter, internal_fan_in, builtin_declarers = (
@@ -845,6 +885,7 @@ def main():
             "PLATFORM_BINARY_RE": PLATFORM_BINARY_RE,
             "RUST_TARGET_RE": RUST_TARGET_RE,
             "SECURITY_RE": SECURITY_RE,
+            "CONFIRMED_PLACEHOLDERS": len(confirmed),
         },
         "paths": {
             "pasada2": str(DIR_PASADA2),
