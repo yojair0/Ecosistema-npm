@@ -4,7 +4,7 @@
 
 - Snapshot date: 2026-09-18
 - Family minimum size: 2
-- Security pattern: `^0\.0\.\d+-security`
+- Security pattern: `^0\.0\.\d+-security`, plus 1,178 placeholders confirmed by npm
 - Node built-ins not counted as bad dependencies: fs, http
 - Platform binary patterns: `(linux|darwin|win32|windows|freebsd|openbsd|netbsd|android|sunos|aix)-(x64|x86|ia32|arm|arm64|ppc64|s390x|riscv64|loong64|mips64el|universal)` and the Rust targets
 
@@ -19,7 +19,7 @@
 | post_snapshot | Created after 2026-09-18 |
 | types_only | Name starts with @types/ |
 | platform_binary | Name matches OS-architecture pattern or a Rust target |
-| security_placeholder | Latest version is 0.0.x-security |
+| security_placeholder | Latest version is 0.0.x-security, or npm confirms it as a placeholder (resources list) |
 | bad_dependency | >=1 production dep missing, or a security placeholder other than the Node built-ins fs and http |
 | family | Scope with >= 2 packages |
 
@@ -34,9 +34,9 @@
 | Graph nodes | 4,395,451 |
 | Packages with profile | 4,389,236 |
 | Packages without profile | 6,215 |
-| Dataset A (with families) | 4,081,497 |
-| Dataset B (without families) | 2,710,352 |
-| Removed by family rule (A minus B) | 1,371,145 |
+| Dataset A (with families) | 4,080,297 |
+| Dataset B (without families) | 2,709,168 |
+| Removed by family rule (A minus B) | 1,371,129 |
 
 ## 3. By criterion
 
@@ -51,9 +51,9 @@
 | post_snapshot | 941 | 626 | 0.02% | 941 | +0 |
 | types_only | 11,401 | 11,396 | 0.26% | 11,401 | +0 |
 | platform_binary | 56,007 | 55,673 | 1.27% | corrected rule |  |
-| security_placeholder | 155,341 | 154,636 | 3.53% | corrected rule |  |
-| bad_dependency | 83,954 | 83,866 | 1.91% | corrected rule |  |
-| family | 1,457,318 | 1,371,145 | 33.16% | 1,457,318 | +0 |
+| security_placeholder | 156,519 | 155,814 | 3.56% | corrected rule |  |
+| bad_dependency | 83,976 | 83,888 | 1.91% | corrected rule |  |
+| family | 1,457,318 | 1,371,129 | 33.16% | 1,457,318 | +0 |
 
 ## 4. Funnel
 
@@ -69,9 +69,9 @@
 | post_snapshot | 4,387,235 | -937 | 4,387,235 | -937 |
 | types_only | 4,375,834 | -11,401 | 4,375,834 | -11,401 |
 | platform_binary | 4,320,001 | -55,833 | 4,320,001 | -55,833 |
-| security_placeholder | 4,165,363 | -154,638 | 4,165,363 | -154,638 |
-| bad_dependency | 4,081,497 | -83,866 | 4,081,497 | -83,866 |
-| family | 4,081,497 | (skip) | 2,710,352 | -1,371,145 |
+| security_placeholder | 4,164,185 | -155,816 | 4,164,185 | -155,816 |
+| bad_dependency | 4,080,297 | -83,888 | 4,080,297 | -83,888 |
+| family | 4,080,297 | (skip) | 2,709,168 | -1,371,129 |
 
 ## 5. Impact of the family rule
 
@@ -146,20 +146,20 @@ A_ext: population A, counting only dependents from other scopes.
 
 | Band | A | % A | A_ext | % A_ext | B | % B |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0 | 3,383,865 | 82.9% | 3,665,927 | 89.8% | 2,395,260 | 88.4% |
-| 1-9 | 630,657 | 15.5% | 365,383 | 9.0% | 277,929 | 10.3% |
-| 10-99 | 55,217 | 1.4% | 39,423 | 1.0% | 28,486 | 1.1% |
-| 100-999 | 9,737 | 0.2% | 8,868 | 0.2% | 7,052 | 0.3% |
+| 0 | 3,382,680 | 82.9% | 3,664,733 | 89.8% | 2,394,077 | 88.4% |
+| 1-9 | 630,654 | 15.5% | 365,380 | 9.0% | 277,928 | 10.3% |
+| 10-99 | 55,208 | 1.4% | 39,420 | 1.0% | 28,486 | 1.1% |
+| 100-999 | 9,734 | 0.2% | 8,868 | 0.2% | 7,052 | 0.3% |
 | 1000+ | 2,021 | 0.0% | 1,896 | 0.0% | 1,625 | 0.1% |
 
 **fan_out**
 
 | Band | A | % A | B | % B |
 | --- | --- | --- | --- | --- |
-| 0 | 1,486,620 | 36.4% | 1,035,424 | 38.2% |
-| 1-2 | 1,211,133 | 29.7% | 780,510 | 28.8% |
-| 3-9 | 1,029,424 | 25.2% | 666,610 | 24.6% |
-| 10-49 | 336,795 | 8.3% | 215,424 | 7.9% |
+| 0 | 1,485,442 | 36.4% | 1,034,247 | 38.2% |
+| 1-2 | 1,211,130 | 29.7% | 780,509 | 28.8% |
+| 3-9 | 1,029,409 | 25.2% | 666,604 | 24.6% |
+| 10-49 | 336,791 | 8.3% | 215,424 | 8.0% |
 | 50+ | 17,525 | 0.4% | 12,384 | 0.5% |
 
 ## 6. By creation year
@@ -171,17 +171,17 @@ A_ext: population A, counting only dependents from other scopes.
 | 2011 | 4,985 | 4,879 | 4,879 | 97.9% |
 | 2012 | 13,261 | 13,124 | 13,124 | 99.0% |
 | 2013 | 31,683 | 31,488 | 31,488 | 99.4% |
-| 2014 | 61,493 | 61,127 | 61,127 | 99.4% |
-| 2015 | 103,962 | 103,238 | 100,961 | 97.1% |
-| 2016 | 164,819 | 159,321 | 148,627 | 90.2% |
-| 2017 | 204,505 | 201,252 | 176,227 | 86.2% |
-| 2018 | 247,888 | 244,604 | 187,181 | 75.5% |
-| 2019 | 281,559 | 278,317 | 188,955 | 67.1% |
+| 2014 | 61,493 | 61,124 | 61,124 | 99.4% |
+| 2015 | 103,962 | 103,235 | 100,958 | 97.1% |
+| 2016 | 164,819 | 159,303 | 148,609 | 90.2% |
+| 2017 | 204,505 | 201,138 | 176,114 | 86.1% |
+| 2018 | 247,888 | 244,602 | 187,179 | 75.5% |
+| 2019 | 281,559 | 278,313 | 188,954 | 67.1% |
 | 2020 | 297,169 | 293,956 | 194,478 | 65.4% |
 | 2021 | 343,242 | 327,560 | 211,955 | 61.8% |
-| 2022 | 376,351 | 366,027 | 207,826 | 55.2% |
+| 2022 | 376,351 | 364,983 | 206,782 | 54.9% |
 | 2023 | 380,193 | 365,976 | 235,603 | 62.0% |
-| 2024 | 707,057 | 610,442 | 447,959 | 63.4% |
+| 2024 | 707,057 | 610,430 | 447,959 | 63.4% |
 | 2025 | 465,790 | 365,965 | 212,680 | 45.7% |
 | 2026 | 705,168 | 654,112 | 287,173 | 40.7% |
 | NA | 6,215 | 0 | 0 | 0.0% |
@@ -192,11 +192,11 @@ A_ext: population A, counting only dependents from other scopes.
 
 | Bad deps | Packages |
 | --- | --- |
-| 1 | 44,823 |
-| 2 | 13,099 |
-| 3-9 | 8,740 |
+| 1 | 44,845 |
+| 2 | 12,852 |
+| 3-9 | 8,987 |
 | 10+ | 17,292 |
-| Total | 83,954 |
+| Total | 83,976 |
 
 ### 7b. Packages that declare Node built-ins (fs, http)
 
@@ -228,16 +228,16 @@ Kept: npm holds security placeholders under those names, but Node loads its own 
 | pubteahy | 9,925 |
 | http | 2,012 |
 | astralamber | 1,543 |
-| cosmicchorus | 1,534 |
+| nebulanomad | 1,534 |
+| vividvortex | 1,534 |
+| ciphersage | 1,534 |
 | luminouslab | 1,534 |
 | stellarscribe | 1,534 |
-| ciphersage | 1,534 |
-| vividvortex | 1,534 |
-| nebulanomad | 1,534 |
+| cosmicchorus | 1,534 |
 | api-chatfb | 808 |
 | api-chatfb-test | 801 |
-| api-chat-fanpage-facebook | 800 |
 | @oraliepham/api-chat-fanpage-facebook | 800 |
+| api-chat-fanpage-facebook | 800 |
 | @oraliepham/api-facebooknew | 800 |
 | api-facebooknew | 797 |
 | @scdb/simple-http | 789 |
@@ -249,6 +249,6 @@ Kept: npm holds security placeholders under those names, but Node loads its own 
 
 - The fan_in and fan_out of datasets A and B come from the full dependency graph and count dependents that may have been excluded from the population.
 - Scope size is counted over the universe before applying any other criterion.
-- Packages with errors in pasada2 are not part of the universe, but a dependency on one of them counts as existing.
+- Packages with errors in pasada2 are not part of the universe. A dependency on one of them counts as missing when the error was a 404 (the package no longer exists), and as existing otherwise.
 - fan_in_internal counts dependents from the package's own scope, read from pasada2; fan_in_external is fan_in minus fan_in_internal.
 - Dependency lists are not stored (only dep_hash and counts). Peer and optional dependency lists are also not stored (only n_peer and n_opt).

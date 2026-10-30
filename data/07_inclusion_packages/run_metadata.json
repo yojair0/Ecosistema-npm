@@ -1,5 +1,5 @@
 {
-  "executed_at": "2026-10-29 16:56:35",
+  "executed_at": "2026-10-30 14:38:45",
   "params": {
     "SNAPSHOT_DATE": "2026-09-18",
     "FAMILY_MIN_SIZE": 2,
@@ -9,13 +9,14 @@
     ],
     "PLATFORM_BINARY_RE": "(linux|darwin|win32|windows|freebsd|openbsd|netbsd|android|sunos|aix)-(x64|x86|ia32|arm|arm64|ppc64|s390x|riscv64|loong64|mips64el|universal)",
     "RUST_TARGET_RE": "(?:^|[-_/.])(?:(?:x86_64|aarch64|i686|i586|armv7a|armv7r|armv7|arm64ec|riscv64gc|riscv64imac|powerpc64le|s390x|loongarch64|wasm32v1|wasm32)-|(?:arm|armv5te|armebv7r|thumbv\\w+(?:\\.\\w+)?|powerpc64|powerpc|mips\\w*|sparc\\w*|riscv32\\w*|nvptx64)-(?:unknown|apple|pc|none|sun|linux|wrs|nvidia)-)",
-    "SECURITY_RE": "^0\\.0\\.\\d+-security"
+    "SECURITY_RE": "^0\\.0\\.\\d+-security",
+    "CONFIRMED_PLACEHOLDERS": 1178
   },
   "paths": {
-    "pasada2": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\pasada2",
-    "graph_csv": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\03_dependency_graph\\graph_metrics.csv",
-    "profile_part1": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\04_profile\\part1",
-    "profile_part2": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\04_profile\\part2"
+    "pasada2": "C:\\Users\\yair\\Documents\\GitHub\\Ecosistema-npm\\data\\pasada2",
+    "graph_csv": "C:\\Users\\yair\\Documents\\GitHub\\Ecosistema-npm\\data\\03_dependency_graph\\graph_metrics.csv",
+    "profile_part1": "C:\\Users\\yair\\Documents\\GitHub\\Ecosistema-npm\\data\\04_profile\\part1",
+    "profile_part2": "C:\\Users\\yair\\Documents\\GitHub\\Ecosistema-npm\\data\\04_profile\\part2"
   },
   "counts": {
     "rows_read": 4405737,
@@ -27,8 +28,8 @@
     "n_graph": 4395451,
     "n_with_profile": 4389236,
     "n_without_profile": 6215,
-    "n_A": 4081497,
-    "n_B": 2710352
+    "n_A": 4080297,
+    "n_B": 2709168
   },
   "columns_A": [
     "name",
@@ -85,8 +86,8 @@
     "unpacked"
   ],
   "versions": {
-    "pandas": "2.3.3",
-    "numpy": "2.4.0",
+    "pandas": "3.0.3",
+    "numpy": "2.4.4",
     "pyarrow": "26.0.0"
   }
 }
