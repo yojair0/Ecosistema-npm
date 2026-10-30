@@ -1,3 +1,21 @@
+"""
+08_descriptive_stats.py -- Descriptive statistics and Spearman correlations
+of the study population, in three situations:
+
+  con familias                  population A, raw fan-in
+  con familias, Fan-In externo  population A, fan-in counted only from
+                                other scopes (fan_in_external)
+  sin familias                  population B, raw fan-in
+
+Corrections in this version:
+  1. Adds the third situation, fan-in from other scopes.
+  2. Adds package volume (file_count, unpacked). It is missing for some
+     packages, so every correlation uses the pairs where both values exist,
+     and the statistics report the share missing.
+  3. A correlation that cannot be computed (a constant variable) is shown
+     as missing, not as 0.
+  4. The age is computed the same way whatever type the dates are stored as.
+"""
 import gc
 from datetime import date
 from pathlib import Path
@@ -15,28 +33,34 @@ DATA_DIR = ROOT / "data" / "07_inclusion_packages"
 OUT_DIR = ROOT / "data" / "08_descriptive_stats"
 FIG_DIR = OUT_DIR / "figures"
 SNAPSHOT_DATE = date(2026, 9, 18)
+EXTERNAL = "con familias, Fan-In externo"
 DATASETS = [
     ("con familias", "population_with_families.parquet"),
+    (EXTERNAL, "population_with_families.parquet"),
     ("sin familias", "population_without_families.parquet"),
 ]
+SHORT = {"con familias": "Con familias", EXTERNAL: "Fan-In externo",
+         "sin familias": "Sin familias"}
+SLUG = {"con familias": "con_familias", EXTERNAL: "fan_in_externo",
+        "sin familias": "sin_familias"}
 COLS = [
     "fan_in", "fan_in_internal", "fan_in_external",
     "fan_out", "fan_in_dev", "fan_out_dev",
     "n_versions", "n_maintainers", "n_keywords",
-    "n_peer", "n_opt",
+    "n_peer", "n_opt", "file_count", "unpacked",
     "created_date", "has_github", "deprecated", "scope",
 ]
 NUMERIC_VARS = [
     "fan_in", "fan_in_internal", "fan_in_external",
     "fan_out", "fan_in_dev", "fan_out_dev",
     "n_versions", "n_maintainers", "n_keywords",
-    "n_peer", "n_opt",
+    "n_peer", "n_opt", "file_count", "unpacked",
 ]
 SPEARMAN_VARS = [
     "n_versions", "n_maintainers", "n_keywords",
     "n_peer", "n_opt", "age_years",
     "has_github", "deprecated", "scoped",
-    "fan_in_dev", "fan_out_dev",
+    "fan_in_dev", "fan_out_dev", "file_count", "unpacked",
 ]
 TRAMO_EDGES = [(0, 0), (1, 9), (10, 99), (100, 999), (1000, None)]
 TRAMO_LABELS = ["0", "1–9", "10–99", "100–999", "≥1000"]
@@ -47,13 +71,9 @@ REDUNDANCY_THRESHOLD = 0.7
 def load_dataset(path):
     df = pd.read_parquet(path, columns=COLS)
     print(f"  memory: {df.memory_usage(deep=True).sum() / 1e6:.1f} MB")
-    # age_years from created_date
-    cd = df["created_date"]
-    if hasattr(cd.dtype, "tz") or np.issubdtype(cd.dtype, np.datetime64):
-        days = (np.datetime64(SNAPSHOT_DATE) - cd.values) / np.timedelta64(1, "D")
-    else:
-        snap = pd.Timestamp(SNAPSHOT_DATE)
-        days = (snap - pd.to_datetime(cd)).dt.days
+    # age_years from created_date; pd.to_datetime accepts dates stored as
+    # Python objects, numpy datetimes or Arrow dates alike
+    days = (pd.Timestamp(SNAPSHOT_DATE) - pd.to_datetime(df["created_date"])).dt.days
     df["age_years"] = days / 365.25
     # scoped
     df["scoped"] = (df["scope"].fillna("").astype(str) != "").astype(np.int8)
@@ -77,17 +97,20 @@ def variable_stats(df):
     rows = []
     for v in NUMERIC_VARS:
         s = df[v]
+        valid = s.dropna()
         rows.append({
             "variable": v,
-            "pct_zero": (s == 0).mean() * 100,
-            "median": float(np.median(s)),
-            "p90": float(np.percentile(s, 90)),
-            "p99": float(np.percentile(s, 99)),
-            "max": float(s.max()),
+            "pct_missing": s.isna().mean() * 100,
+            "pct_zero": (valid == 0).mean() * 100,
+            "median": float(np.median(valid)),
+            "p90": float(np.percentile(valid, 90)),
+            "p99": float(np.percentile(valid, 99)),
+            "max": float(valid.max()),
         })
     s = df["age_years"]
     rows.append({
         "variable": "age_years",
+        "pct_missing": s.isna().mean() * 100,
         "pct_zero": np.nan,
         "median": float(np.median(s)),
         "p90": float(np.percentile(s, 90)),
@@ -122,6 +145,7 @@ def tramo_table(df):
             "pct": cnt / n * 100,
             "med_n_versions": float(np.median(sub["n_versions"])) if cnt else np.nan,
             "med_age_years": float(np.median(sub["age_years"])) if cnt else np.nan,
+            "med_file_count": float(sub["file_count"].median()) if cnt else np.nan,
             "pct_github": sub["has_github"].mean() * 100 if cnt else np.nan,
             "pct_scoped": sub["scoped"].mean() * 100 if cnt else np.nan,
             "pct_deprecated": sub["deprecated"].mean() * 100 if cnt else np.nan,
@@ -142,7 +166,7 @@ def _pearson_on_ranks(rx, ry):
     num = (dx * dy).sum()
     den = np.sqrt((dx * dx).sum() * (dy * dy).sum())
     if den == 0:
-        return 0.0
+        return np.nan  # a constant variable has no correlation
     return float(num / den)
 def spearman_vs(df, target, variables, positive_only):
     if positive_only:
@@ -153,13 +177,21 @@ def spearman_vs(df, target, variables, positive_only):
     n = len(sub)
     if n < 3:
         return pd.Series(np.nan, index=variables)
-    ranks = {}
-    for col in [target] + list(variables):
-        ranks[col] = rankdata(sub[col].values, method="average")
-    rt = ranks[target]
+    # Each pair uses the rows where both values exist (file_count and
+    # unpacked are missing for some packages).
+    t = sub[target].values.astype(float)
+    rt = rankdata(t, method="average")
     result = {}
     for v in variables:
-        result[v] = _pearson_on_ranks(rt, ranks[v])
+        x = sub[v].values.astype(float)
+        m = ~np.isnan(x)
+        if m.all():
+            result[v] = _pearson_on_ranks(rt, rankdata(x, method="average"))
+        elif m.sum() < 3:
+            result[v] = np.nan
+        else:
+            result[v] = _pearson_on_ranks(rankdata(t[m], method="average"),
+                                          rankdata(x[m], method="average"))
     return pd.Series(result)
 def spearman_tables(df, label):
     print(f"  Spearman vs fan_in ({label})...")
@@ -180,17 +212,32 @@ def spearman_tables(df, label):
 def corr_matrix(df):
     cols = ["fan_in", "fan_out"] + list(SPEARMAN_VARS)
     print(f"  full correlation matrix...")
-    ranks = {}
+    # Columns without missing values are ranked once; a pair that involves
+    # a column with missing values uses the rows where both exist.
+    ranks, partial = {}, set()
     for c in cols:
-        ranks[c] = rankdata(df[c].values, method="average")
+        x = df[c].values.astype(float)
+        if np.isnan(x).any():
+            partial.add(c)
+        else:
+            ranks[c] = rankdata(x, method="average")
     mat = np.empty((len(cols), len(cols)))
     for i, ci in enumerate(cols):
         for j, cj in enumerate(cols):
             if i == j:
                 mat[i, j] = 1.0
             elif j > i:
-                mat[i, j] = _pearson_on_ranks(ranks[ci], ranks[cj])
-                mat[j, i] = mat[i, j]
+                if ci in partial or cj in partial:
+                    x = df[ci].values.astype(float)
+                    y = df[cj].values.astype(float)
+                    m = ~(np.isnan(x) | np.isnan(y))
+                    rho = (_pearson_on_ranks(rankdata(x[m], method="average"),
+                                             rankdata(y[m], method="average"))
+                           if m.sum() >= 3 else np.nan)
+                else:
+                    rho = _pearson_on_ranks(ranks[ci], ranks[cj])
+                mat[i, j] = rho
+                mat[j, i] = rho
     return pd.DataFrame(mat, index=cols, columns=cols)
 def redundant_pairs(matrix):
     pairs = []
@@ -215,6 +262,9 @@ def analyze_dataset(label, path):
     print(f"\n=== Dataset: {label} ===")
     print(f"  loading {path.name}...")
     df = load_dataset(path)
+    if label == EXTERNAL:
+        # Same population as A; fan-in counts only dependents from other scopes
+        df["fan_in"] = df["fan_in_external"]
     n = len(df)
     print(f"  {n:,} packages")
     print(f"  step 1: zeros grid")
@@ -290,13 +340,16 @@ def _frho(v):
     return s.replace(".", ",")
 # ── Comparison ────────────────────────────────────────────────────────
 def compare(res):
-    ra, rb = res["con familias"], res["sin familias"]
+    ra = res["con familias"]
+    labels = [label for label, _ in DATASETS]
     summary = [
-        ("N", ra["n"], rb["n"]),
-        ("% fan_in=0", ra["pct_fi0"], rb["pct_fi0"]),
-        ("Mediana fan_in", ra["med_fi"], rb["med_fi"]),
-        ("p99 fan_in", ra["p99_fi"], rb["p99_fi"]),
-        ("ρ(n_versions, fan_in)", ra["rho_nv_fi"], rb["rho_nv_fi"]),
+        ("N", [res[l]["n"] for l in labels]),
+        ("% fan_in=0", [res[l]["pct_fi0"] for l in labels]),
+        ("Mediana fan_in", [res[l]["med_fi"] for l in labels]),
+        ("p99 fan_in", [res[l]["p99_fi"] for l in labels]),
+        ("ρ(n_versions, fan_in)", [res[l]["rho_nv_fi"] for l in labels]),
+        ("ρ(file_count, fan_in)",
+         [float(res[l]["sp_in"].loc["file_count", "all"]) for l in labels]),
     ]
     ta = ra["tramos"]
     by_tramo = []
@@ -325,22 +378,20 @@ def _heatmap(ax, data, row_labels, col_labels, title):
     ax.set_title(title, fontsize=9)
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
-            ax.text(j, i, f"{data[i, j]:.2f}", ha="center", va="center",
+            text = "—" if np.isnan(data[i, j]) else f"{data[i, j]:.2f}"
+            ax.text(j, i, text, ha="center", va="center",
                     fontsize=6, color="white" if abs(data[i, j]) > 0.6 else "black")
     return im
 def fig_spearman_fan_in(res):
     FIG_DIR.mkdir(parents=True, exist_ok=True)
-    ra, rb = res["con familias"], res["sin familias"]
     vars_in = list(SPEARMAN_VARS) + ["fan_out"]
-    col_labels = ["Con familias\ntodos", "Con familias\nfan_in>0",
-                  "Sin familias\ntodos", "Sin familias\nfan_in>0"]
-    data = np.column_stack([
-        ra["sp_in"]["all"].values,
-        ra["sp_in"]["fan_in>0"].values,
-        rb["sp_in"]["all"].values,
-        rb["sp_in"]["fan_in>0"].values,
-    ])
-    fig, ax = plt.subplots(figsize=(6, 6))
+    col_labels, columns = [], []
+    for label, _ in DATASETS:
+        col_labels += [f"{SHORT[label]}\ntodos", f"{SHORT[label]}\nfan_in>0"]
+        columns += [res[label]["sp_in"]["all"].values,
+                    res[label]["sp_in"]["fan_in>0"].values]
+    data = np.column_stack(columns)
+    fig, ax = plt.subplots(figsize=(8, 6.5))
     im = _heatmap(ax, data, vars_in, col_labels, "Spearman ρ vs fan_in")
     fig.colorbar(im, ax=ax, shrink=0.6)
     fig.tight_layout()
@@ -350,17 +401,14 @@ def fig_spearman_fan_in(res):
     return path
 def fig_spearman_fan_out(res):
     FIG_DIR.mkdir(parents=True, exist_ok=True)
-    ra, rb = res["con familias"], res["sin familias"]
     vars_out = list(SPEARMAN_VARS) + ["fan_in"]
-    col_labels = ["Con familias\ntodos", "Con familias\nfan_out>0",
-                  "Sin familias\ntodos", "Sin familias\nfan_out>0"]
-    data = np.column_stack([
-        ra["sp_out"]["all"].values,
-        ra["sp_out"]["fan_out>0"].values,
-        rb["sp_out"]["all"].values,
-        rb["sp_out"]["fan_out>0"].values,
-    ])
-    fig, ax = plt.subplots(figsize=(6, 6))
+    col_labels, columns = [], []
+    for label, _ in DATASETS:
+        col_labels += [f"{SHORT[label]}\ntodos", f"{SHORT[label]}\nfan_out>0"]
+        columns += [res[label]["sp_out"]["all"].values,
+                    res[label]["sp_out"]["fan_out>0"].values]
+    data = np.column_stack(columns)
+    fig, ax = plt.subplots(figsize=(8, 6.5))
     im = _heatmap(ax, data, vars_out, col_labels, "Spearman ρ vs fan_out")
     fig.colorbar(im, ax=ax, shrink=0.6)
     fig.tight_layout()
@@ -370,15 +418,13 @@ def fig_spearman_fan_out(res):
     return path
 def fig_spearman_compare(res):
     FIG_DIR.mkdir(parents=True, exist_ok=True)
-    ra, rb = res["con familias"], res["sin familias"]
     vars_in = list(SPEARMAN_VARS) + ["fan_out"]
-    rho_a = [ra["sp_in"].loc[v, "all"] for v in vars_in]
-    rho_b = [rb["sp_in"].loc[v, "all"] for v in vars_in]
     x = np.arange(len(vars_in))
-    w = 0.35
-    fig, ax = plt.subplots(figsize=(8, 4))
-    ax.bar(x - w / 2, rho_a, w, label="Con familias")
-    ax.bar(x + w / 2, rho_b, w, label="Sin familias")
+    w = 0.27
+    fig, ax = plt.subplots(figsize=(9, 4))
+    for k, (label, _) in enumerate(DATASETS):
+        rho = [res[label]["sp_in"].loc[v, "all"] for v in vars_in]
+        ax.bar(x + (k - 1) * w, rho, w, label=SHORT[label])
     ax.set_xticks(x)
     ax.set_xticklabels(vars_in, rotation=45, ha="right", fontsize=7)
     ax.set_ylabel("ρ Spearman con fan_in")
@@ -393,8 +439,8 @@ def fig_spearman_compare(res):
 def fig_corr_matrices(res):
     FIG_DIR.mkdir(parents=True, exist_ok=True)
     paths = []
-    for label, slug in [("con familias", "con_familias"),
-                        ("sin familias", "sin_familias")]:
+    for label, _ in DATASETS:
+        slug = SLUG[label]
         r = res[label]
         cm = r["corr"]
         cols = list(cm.columns)
@@ -414,9 +460,10 @@ def fig_fan_in_distribution(res):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
     # Left: % packages per tramo, grouped bars
     x = np.arange(len(TRAMO_LABELS))
-    w = 0.35
-    ax1.bar(x - w / 2, ra["tramos"]["pct"].values, w, label="Con familias")
-    ax1.bar(x + w / 2, rb["tramos"]["pct"].values, w, label="Sin familias")
+    w = 0.27
+    for k, (label, _) in enumerate(DATASETS):
+        ax1.bar(x + (k - 1) * w, res[label]["tramos"]["pct"].values, w,
+                label=SHORT[label])
     ax1.set_xticks(x)
     ax1.set_xticklabels(TRAMO_LABELS, fontsize=8)
     ax1.set_ylabel("% de paquetes")
@@ -443,10 +490,8 @@ def fig_fan_in_distribution(res):
     return path
 def fig_by_tramo(res):
     FIG_DIR.mkdir(parents=True, exist_ok=True)
-    ra, rb = res["con familias"], res["sin familias"]
     fig, axes = plt.subplots(2, 2, figsize=(10, 7))
     x = np.arange(len(TRAMO_LABELS))
-    ta, tb = ra["tramos"], rb["tramos"]
     panels = [
         (axes[0, 0], "med_n_versions", "Mediana de n_versions"),
         (axes[0, 1], "med_age_years", "Mediana de age_years"),
@@ -454,8 +499,8 @@ def fig_by_tramo(res):
         (axes[1, 1], "pct_scoped", "% con scope"),
     ]
     for ax, col, title in panels:
-        ax.plot(x, ta[col].values, "o-", label="Con familias")
-        ax.plot(x, tb[col].values, "s--", label="Sin familias")
+        for (label, _), style in zip(DATASETS, ["o-", "^:", "s--"]):
+            ax.plot(x, res[label]["tramos"][col].values, style, label=SHORT[label])
         ax.set_xticks(x)
         ax.set_xticklabels(TRAMO_LABELS, fontsize=8)
         ax.set_title(title, fontsize=9)
@@ -494,8 +539,9 @@ def fig_internal_share(res):
 FIGURES = [
     ("fig1_spearman_fan_in.png", "ρ Spearman vs fan_in"),
     ("fig2_spearman_fan_out.png", "ρ Spearman vs fan_out"),
-    ("fig3_spearman_A_vs_B.png", "ρ vs fan_in: A vs B"),
+    ("fig3_spearman_A_vs_B.png", "ρ vs fan_in en las tres situaciones"),
     ("fig4_corr_matrix_con_familias.png", "Matriz Spearman — con familias"),
+    ("fig4_corr_matrix_fan_in_externo.png", "Matriz Spearman — Fan-In externo"),
     ("fig4_corr_matrix_sin_familias.png", "Matriz Spearman — sin familias"),
     ("fig5_fan_in_distribution.png", "Distribución de fan_in"),
     ("fig6_by_fan_in_tramo.png", "Variables por tramo de fan_in"),
@@ -505,6 +551,9 @@ def _write_dataset(f, r):
     label = r["label"]
     fn, fp, fr = format_number, format_pct, _frho
     f.write(f"# Dataset: {label}\n\n")
+    if label == EXTERNAL:
+        f.write("Población A, con fan_in contado solo desde otros scopes "
+                "(fan_in_external).\n\n")
     # 1
     f.write("## 1. Tamaño y ceros\n\n")
     f.write(f"Paquetes: {fn(r['n'])}\n\n")
@@ -514,13 +563,15 @@ def _write_dataset(f, r):
     f.write("\n")
     # 2
     f.write("## 2. Estadísticos por variable\n\n")
-    f.write("| Variable | % cero | Mediana | p90 | p99 | Máx |\n")
-    f.write("|----------|--------|---------|-----|-----|-----|\n")
+    f.write("% cero y los percentiles se calculan sobre los valores presentes.\n\n")
+    f.write("| Variable | % faltante | % cero | Mediana | p90 | p99 | Máx |\n")
+    f.write("|----------|------------|--------|---------|-----|-----|-----|\n")
     for _, row in r["stats"].iterrows():
         v = row["variable"]
         if v in ("has_github", "deprecated", "scoped"):
             continue
-        f.write(f"| {v} | {fp(row['pct_zero'])} | {fn(row['median'], 1)} "
+        f.write(f"| {v} | {fp(row['pct_missing'])} | {fp(row['pct_zero'])} "
+                f"| {fn(row['median'], 1)} "
                 f"| {fn(row['p90'], 1)} | {fn(row['p99'], 1)} "
                 f"| {fn(row['max'])} |\n")
     f.write("\n| Variable | % verdaderos |\n|----------|--------------|\n")
@@ -558,10 +609,10 @@ def _write_dataset(f, r):
     f.write("\n")
     # 6
     f.write("## 6. Tabla por tramo de fan_in\n\n")
-    f.write("| Tramo | N | % | Med n_versions | Med age_years "
+    f.write("| Tramo | N | % | Med n_versions | Med age_years | Med file_count "
             "| % GitHub | % scoped | % deprecated "
             "| Σ fi_internal | Σ fi_external | % fi_internal>0 |\n")
-    f.write("|-------|---|---|----------------|---------------"
+    f.write("|-------|---|---|----------------|---------------|----------------"
             "|----------|----------|-------------"
             "|---------------|---------------|------------------|\n")
     for _, row in r["tramos"].iterrows():
@@ -569,6 +620,7 @@ def _write_dataset(f, r):
                 f"| {fp(row['pct'])} "
                 f"| {fn(row['med_n_versions'], 1)} "
                 f"| {fn(row['med_age_years'], 1)} "
+                f"| {fn(row['med_file_count'], 1)} "
                 f"| {fp(row['pct_github'])} "
                 f"| {fp(row['pct_scoped'])} "
                 f"| {fp(row['pct_deprecated'])} "
@@ -590,17 +642,18 @@ def write_md(res, comp):
             _write_dataset(f, res[label])
         # Comparison
         f.write("# Comparación entre datasets\n\n")
-        f.write("| Métrica | Con familias | Sin familias |\n")
-        f.write("|---------|-------------|-------------|\n")
-        for name, va, vb in comp["summary"]:
+        f.write("| Métrica | " + " | ".join(SHORT[l] for l, _ in DATASETS) + " |\n")
+        f.write("|---------|" + "---|" * len(DATASETS) + "\n")
+        for name, values in comp["summary"]:
             if name == "N":
-                f.write(f"| {name} | {fn(va)} | {fn(vb)} |\n")
+                cells = [fn(v) for v in values]
             elif name.startswith("%"):
-                f.write(f"| {name} | {fp(va)} | {fp(vb)} |\n")
+                cells = [fp(v) for v in values]
             elif name.startswith("ρ"):
-                f.write(f"| {name} | {fr(va)} | {fr(vb)} |\n")
+                cells = [fr(v) for v in values]
             else:
-                f.write(f"| {name} | {fn(va, 1)} | {fn(vb, 1)} |\n")
+                cells = [fn(v, 1) for v in values]
+            f.write(f"| {name} | " + " | ".join(cells) + " |\n")
         f.write("\n### Solo con familias: fan_in interno\n\n")
         f.write(f"- Parte interna del fan_in total: {fp(comp['pct_int_share'])}\n")
         f.write(f"- Paquetes con fan_in_internal > 0: {fp(comp['pct_has_int'])}\n\n")
@@ -632,17 +685,18 @@ def main():
     print("Writing markdown...")
     write_md(res, comp)
     # Console comparison
-    print("\n=== Comparación A vs B ===")
-    print(f"  {'':25s}  {'Con fam':>12s}  {'Sin fam':>12s}")
-    for name, va, vb in comp["summary"]:
+    print("\n=== Comparación de las tres situaciones ===")
+    print(f"  {'':25s}  {'Con fam':>12s}  {'Externo':>12s}  {'Sin fam':>12s}")
+    for name, values in comp["summary"]:
         if name == "N":
-            print(f"  {name:25s}  {va:>12,}  {vb:>12,}")
+            cells = [f"{v:>12,}" for v in values]
         elif name.startswith("%"):
-            print(f"  {name:25s}  {va:>11.1f}%  {vb:>11.1f}%")
+            cells = [f"{v:>11.1f}%" for v in values]
         elif name.startswith("ρ"):
-            print(f"  {name:25s}  {va:>+12.3f}  {vb:>+12.3f}")
+            cells = [f"{v:>+12.3f}" for v in values]
         else:
-            print(f"  {name:25s}  {va:>12.1f}  {vb:>12.1f}")
+            cells = [f"{v:>12.1f}" for v in values]
+        print(f"  {name:25s}  " + "  ".join(cells))
     print(f"\n  Con familias: parte interna = {comp['pct_int_share']:.1f}%")
     print(f"  Con familias: paquetes con fi_internal>0 = {comp['pct_has_int']:.1f}%")
     print("\nDone.")
