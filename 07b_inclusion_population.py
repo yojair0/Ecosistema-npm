@@ -272,17 +272,20 @@ def load_profile():
     return prof, prof_dup_names, n_dupes
 
 def load_dependency_check(universe_names, security_names):
-    # Returns (dep_issues, placeholder_counter, internal_fan_in, builtin_declarers).
+    # Returns (dep_issues, placeholder_counter, internal_fan_in,
+    #          internal_fan_out, builtin_declarers).
     # dep_issues: dict name -> (n_missing, n_placeholder, False); fs and http
     #   are not counted, because Node loads its own built-in module first
     # placeholder_counter: Counter placeholder_name -> n_packages declaring it
     # internal_fan_in: Counter name -> dependents from its own scope
+    # internal_fan_out: Counter name -> deps declared to its own scope
     # builtin_declarers: packages that declare fs or http
     p2_dir = str(DIR_PASADA2)
     p2_files = sorted(f for f in os.listdir(p2_dir) if f.endswith(".jsonl"))
     dep_issues = {}
     placeholder_counter = collections.Counter()
     internal_fan_in = collections.Counter()
+    internal_fan_out = collections.Counter()
     builtin_declarers = set()
     seen = set()
     for fi, fname in enumerate(p2_files):
@@ -309,6 +312,7 @@ def load_dependency_check(universe_names, security_names):
                         continue
                     if scope and scope_of(dn) == scope:
                         internal_fan_in[dn] += 1
+                        internal_fan_out[name] += 1
                     if dn in security_names:
                         pkg_placeholders.add(dn)
                         if dn in NODE_PLACEHOLDER_NAMES:
@@ -322,7 +326,7 @@ def load_dependency_check(universe_names, security_names):
         if (fi + 1) % 20 == 0 or fi + 1 == len(p2_files):
             print(f"  dep_check: {fi + 1}/{len(p2_files)} shards, "
                   f"{len(dep_issues):,} with issues")
-    return dep_issues, placeholder_counter, internal_fan_in, builtin_declarers
+    return dep_issues, placeholder_counter, internal_fan_in, internal_fan_out, builtin_declarers
 
 # ── Additional imports for main ──────────────────────────────────────
 import gc
@@ -754,12 +758,14 @@ def main():
                 | df["name"].isin(confirmed))
     security_names = set(df.loc[sec_mask, "name"])
     universe_names = set(df["name"]) | error_names
-    dep_issues, placeholder_counter, internal_fan_in, builtin_declarers = (
+    dep_issues, placeholder_counter, internal_fan_in, internal_fan_out, builtin_declarers = (
         load_dependency_check(universe_names, security_names))
     del universe_names
     df["fan_in_internal"] = df["name"].map(internal_fan_in).fillna(0).astype("int32")
     df["fan_in_external"] = (df["fan_in"] - df["fan_in_internal"]).clip(lower=0).astype("int32")
-    del internal_fan_in
+    df["fan_out_internal"] = df["name"].map(internal_fan_out).fillna(0).astype("int32")
+    df["fan_out_external"] = (df["fan_out"] - df["fan_out_internal"]).clip(lower=0).astype("int32")
+    del internal_fan_in, internal_fan_out
 
     # ── 4. Apply criteria ────────────────────────────────────────
     print("\n[6] Applying criteria ...")
@@ -846,7 +852,8 @@ def main():
         "name", "scope", "scope_size", "created_date", "created_year",
         "latest_profile", "latest_p2", "tarball",
         "dep_hash", "fan_in", "fan_in_internal", "fan_in_external",
-        "fan_out", "fan_in_dev", "fan_out_dev",
+        "fan_out", "fan_out_internal", "fan_out_external",
+        "fan_in_dev", "fan_out_dev",
         "n_versions", "n_maintainers", "deprecated", "has_github",
         "n_keywords", "keywords", "n_peer", "n_opt",
         "file_count", "unpacked",
@@ -869,7 +876,8 @@ def main():
     # inclusion_flags.parquet
     print("[9] Writing inclusion_flags.parquet ...")
     flags_cols = (["name", "scope", "scope_size", "created_year",
-                   "fan_in", "fan_in_external", "fan_out"] + CRITERIA + ["in_A", "in_B"])
+                   "fan_in", "fan_in_external", "fan_out", "fan_out_external"]
+                  + CRITERIA + ["in_A", "in_B"])
     flags = df[flags_cols].copy()
     write_parquet_chunked(flags, DIR_OUT / "inclusion_flags.parquet")
     del df; gc.collect()

@@ -1,5 +1,5 @@
 {
-  "executed_at": "2026-10-30 14:38:45",
+  "executed_at": "2026-10-31 00:30:06",
   "params": {
     "SNAPSHOT_DATE": "2026-09-18",
     "FAMILY_MIN_SIZE": 2,
@@ -13,10 +13,10 @@
     "CONFIRMED_PLACEHOLDERS": 1178
   },
   "paths": {
-    "pasada2": "C:\\Users\\yair\\Documents\\GitHub\\Ecosistema-npm\\data\\pasada2",
-    "graph_csv": "C:\\Users\\yair\\Documents\\GitHub\\Ecosistema-npm\\data\\03_dependency_graph\\graph_metrics.csv",
-    "profile_part1": "C:\\Users\\yair\\Documents\\GitHub\\Ecosistema-npm\\data\\04_profile\\part1",
-    "profile_part2": "C:\\Users\\yair\\Documents\\GitHub\\Ecosistema-npm\\data\\04_profile\\part2"
+    "pasada2": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\pasada2",
+    "graph_csv": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\03_dependency_graph\\graph_metrics.csv",
+    "profile_part1": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\04_profile\\part1",
+    "profile_part2": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\04_profile\\part2"
   },
   "counts": {
     "rows_read": 4405737,
@@ -45,6 +45,8 @@
     "fan_in_internal",
     "fan_in_external",
     "fan_out",
+    "fan_out_internal",
+    "fan_out_external",
     "fan_in_dev",
     "fan_out_dev",
     "n_versions",
@@ -72,6 +74,8 @@
     "fan_in_internal",
     "fan_in_external",
     "fan_out",
+    "fan_out_internal",
+    "fan_out_external",
     "fan_in_dev",
     "fan_out_dev",
     "n_versions",
@@ -86,8 +90,8 @@
     "unpacked"
   ],
   "versions": {
-    "pandas": "3.0.3",
-    "numpy": "2.4.4",
+    "pandas": "2.3.3",
+    "numpy": "2.4.0",
     "pyarrow": "26.0.0"
   }
 }
