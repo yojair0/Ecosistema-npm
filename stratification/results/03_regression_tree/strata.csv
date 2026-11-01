@@ -1,0 +1,49 @@
+technique,config,stratum,description,n,share,mean_log_fi,mean_log_fo,median_n_versions,median_age
+03_regression_tree,leaves8,0,"Aislado (Fan-In 0, Fan-Out 0)",939787,0.3468913703395286,0.0,0.0,2.0,4.5119781494140625
+03_regression_tree,leaves8,1,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev > 7,50",451325,0.16659173591301832,0.0,1.692341964330308,4.0,4.394250392913818
+03_regression_tree,leaves8,2,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50",995761,0.36755232602776944,0.0,1.379697093660996,2.0,3.7097878456115723
+03_regression_tree,leaves8,3,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt > 0,50",7204,0.0026591189619839008,0.0,2.3590685501127413,4.0,5.0691306591033936
+03_regression_tree,leaves8,4,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), fan_in_dev ≤ 5,50",87026,0.032122777177347434,1.1798589415621183,0.0,4.0,8.068446159362793
+03_regression_tree,leaves8,5,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), fan_in_dev > 5,50",7434,0.002744015874984497,3.695273413579857,0.0,14.0,10.39561939239502
+03_regression_tree,leaves8,6,"Con ambas conexiones, fan_in_dev ≤ 6,50",205934,0.07601374296462973,1.1822564157620354,1.4686231931031966,6.0,6.874743461608887
+03_regression_tree,leaves8,7,"Con ambas conexiones, fan_in_dev > 6,50",14697,0.005424912740738116,3.2707101689367954,1.5309562456505836,25.0,10.308008193969727
+03_regression_tree,leaves15,0,"Aislado (Fan-In 0, Fan-Out 0)",939787,0.3468913703395286,0.0,0.0,2.0,4.5119781494140625
+03_regression_tree,leaves15,1,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt > 0,50",7204,0.0026591189619839008,0.0,2.3590685501127413,4.0,5.0691306591033936
+03_regression_tree,leaves15,2,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions > 10,50",112728,0.04160982264665757,0.0,1.6380824660474973,18.0,5.319643974304199
+03_regression_tree,leaves15,3,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev > 7,50 y n_versions > 37,50",28356,0.010466682021934409,0.0,2.0804144246611807,67.0,4.624229907989502
+03_regression_tree,leaves15,4,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 0,50 y n_opt ≤ 0,50 y n_peer > 0,50",54884,0.0202586181440206,0.0,0.9650848913845637,3.0,4.668035507202148
+03_regression_tree,leaves15,5,"Consumidor (Fan-In 0, Fan-Out mayor a 0), 0,50 < fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer > 0,50",56155,0.020727765867602155,0.0,1.3247854991911054,4.0,2.655715227127075
+03_regression_tree,leaves15,6,"Consumidor (Fan-In 0, Fan-Out mayor a 0), 7,50 < fan_out_dev ≤ 18,50 y n_versions ≤ 37,50",282723,0.10435786927942453,0.0,1.601871879236194,3.0,3.9753594398498535
+03_regression_tree,leaves15,7,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev > 18,50 y n_versions ≤ 37,50",140246,0.05176718461165937,0.0,1.7962578776652014,4.0,5.062285900115967
+03_regression_tree,leaves15,8,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions ≤ 10,50 y age_years ≤ 2,40",313865,0.11585291129970529,0.0,1.4482393513752716,1.0,2.1629021167755127
+03_regression_tree,leaves15,9,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions ≤ 10,50 y age_years > 2,40",458129,0.1691032080697838,0.0,1.3255613692410297,2.0,6.869267463684082
+03_regression_tree,leaves15,10,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), fan_in_dev ≤ 5,50",87026,0.032122777177347434,1.1798589415621183,0.0,4.0,8.068446159362793
+03_regression_tree,leaves15,11,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), fan_in_dev > 5,50",7434,0.002744015874984497,3.695273413579857,0.0,14.0,10.39561939239502
+03_regression_tree,leaves15,12,"Con ambas conexiones, fan_in_dev > 6,50",14697,0.005424912740738116,3.2707101689367954,1.5309562456505836,25.0,10.308008193969727
+03_regression_tree,leaves15,13,"Con ambas conexiones, fan_in_dev ≤ 6,50 y age_years ≤ 2,65",51293,0.018933118950172155,1.3454824290239178,1.7343040514149188,2.0,2.291581153869629
+03_regression_tree,leaves15,14,"Con ambas conexiones, fan_in_dev ≤ 6,50 y age_years > 2,65",154641,0.05708062401445758,1.1281158456755367,1.3804992915145864,7.0,8.553046226501465
+03_regression_tree,leaves25,0,"Aislado (Fan-In 0, Fan-Out 0)",939787,0.3468913703395286,0.0,0.0,2.0,4.5119781494140625
+03_regression_tree,leaves25,1,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt > 0,50",7204,0.0026591189619839008,0.0,2.3590685501127413,4.0,5.0691306591033936
+03_regression_tree,leaves25,2,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions > 10,50",112728,0.04160982264665757,0.0,1.6380824660474973,18.0,5.319643974304199
+03_regression_tree,leaves25,3,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev > 7,50 y n_versions > 37,50",28356,0.010466682021934409,0.0,2.0804144246611807,67.0,4.624229907989502
+03_regression_tree,leaves25,4,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 0,50 y n_opt ≤ 0,50 y n_peer > 0,50",54884,0.0202586181440206,0.0,0.9650848913845637,3.0,4.668035507202148
+03_regression_tree,leaves25,5,"Consumidor (Fan-In 0, Fan-Out mayor a 0), 0,50 < fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer > 0,50",56155,0.020727765867602155,0.0,1.3247854991911054,4.0,2.655715227127075
+03_regression_tree,leaves25,6,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev > 18,50 y n_versions ≤ 37,50",140246,0.05176718461165937,0.0,1.7962578776652014,4.0,5.062285900115967
+03_regression_tree,leaves25,7,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions ≤ 10,50 y age_years > 2,40",458129,0.1691032080697838,0.0,1.3255613692410297,2.0,6.869267463684082
+03_regression_tree,leaves25,8,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions ≤ 10,50 y 2,29 < age_years ≤ 2,40 y n_keywords ≤ 3,50",57278,0.021142284273252897,0.0,1.6620529208559665,1.0,2.3353867530822754
+03_regression_tree,leaves25,9,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions ≤ 10,50 y 2,29 < age_years ≤ 2,40 y n_keywords > 3,50",26522,0.009789721420007913,0.0,2.1458568312545134,1.0,2.32991099357605
+03_regression_tree,leaves25,10,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions ≤ 10,50 y 2,19 < age_years ≤ 2,29 y n_keywords ≤ 0,50",40403,0.014913434678100435,0.0,0.908559051212847,1.0,2.24503755569458
+03_regression_tree,leaves25,11,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions ≤ 10,50 y age_years ≤ 2,29 y 0,50 < n_keywords ≤ 1,50",10289,0.0037978449472310318,0.0,1.9032861603861693,1.0,2.2121834754943848
+03_regression_tree,leaves25,12,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions ≤ 10,50 y age_years ≤ 2,29 y n_keywords > 1,50",115474,0.04262341796448208,0.0,1.3653330509592012,2.0,0.7474332451820374
+03_regression_tree,leaves25,13,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions ≤ 10,50 y age_years ≤ 2,19 y n_keywords ≤ 0,50 y has_github ≤ 0,50",44979,0.01660251412979926,0.0,1.2449140109026222,1.0,1.4099931716918945
+03_regression_tree,leaves25,14,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions ≤ 10,50 y age_years ≤ 2,11 y n_keywords ≤ 0,50 y has_github > 0,50",11207,0.004136694365207326,0.0,1.339734668102113,2.0,0.8049281239509583
+03_regression_tree,leaves25,15,"Consumidor (Fan-In 0, Fan-Out mayor a 0), fan_out_dev ≤ 7,50 y n_opt ≤ 0,50 y n_peer ≤ 0,50 y n_versions ≤ 10,50 y 2,11 < age_years ≤ 2,19 y n_keywords ≤ 0,50 y has_github > 0,50",7713,0.002846999521624351,0.0,2.2661580242409527,1.0,2.1492128372192383
+03_regression_tree,leaves25,16,"Consumidor (Fan-In 0, Fan-Out mayor a 0), 7,50 < fan_out_dev ≤ 18,50 y n_versions ≤ 37,50 y age_years ≤ 3,10",120211,0.04437192525528132,0.0,1.7040838508362741,2.0,1.9301848411560059
+03_regression_tree,leaves25,17,"Consumidor (Fan-In 0, Fan-Out mayor a 0), 7,50 < fan_out_dev ≤ 18,50 y n_versions ≤ 37,50 y age_years > 3,10",162512,0.05998594402414321,0.0,1.5262651343919853,4.0,6.548939228057861
+03_regression_tree,leaves25,18,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), fan_in_dev > 5,50",7434,0.002744015874984497,3.695273413579857,0.0,14.0,10.39561939239502
+03_regression_tree,leaves25,19,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), fan_in_dev ≤ 0,50",73043,0.026961413983924216,1.0590526232875253,0.0,4.0,7.759068965911865
+03_regression_tree,leaves25,20,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), 0,50 < fan_in_dev ≤ 5,50",13983,0.0051613631934232206,1.8109149313886144,0.0,8.0,9.399042129516602
+03_regression_tree,leaves25,21,"Con ambas conexiones, fan_in_dev > 6,50",14697,0.005424912740738116,3.2707101689367954,1.5309562456505836,25.0,10.308008193969727
+03_regression_tree,leaves25,22,"Con ambas conexiones, fan_in_dev ≤ 6,50 y age_years > 2,65",154641,0.05708062401445758,1.1281158456755367,1.3804992915145864,7.0,8.553046226501465
+03_regression_tree,leaves25,23,"Con ambas conexiones, fan_in_dev ≤ 6,50 y age_years ≤ 2,25",23870,0.008810823101409732,0.9131180583748083,1.4178104926659403,5.0,1.174538016319275
+03_regression_tree,leaves25,24,"Con ambas conexiones, fan_in_dev ≤ 6,50 y 2,25 < age_years ≤ 2,65",27423,0.010122295848762425,1.7218284716676153,2.0097918261792795,1.0,2.4914441108703613

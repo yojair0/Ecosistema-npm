@@ -1,0 +1,97 @@
+technique,config,stratum,description,n,share,mean_log_fi,mean_log_fo,median_n_versions,median_age
+02_optimal_cuts,bands2_nocensus,0,"Aislado (Fan-In 0, Fan-Out 0)",939787,0.3468913703395286,0.0,0.0,2.0,4.5119781494140625
+02_optimal_cuts,bands2_nocensus,1,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 1 a 11",1309062,0.4831970553321167,0.0,1.3051724594684317,2.0,4.060232639312744
+02_optimal_cuts,bands2_nocensus,2,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 12 o más",145228,0.0536061255706549,0.0,3.0716380755781336,3.0,3.45242977142334
+02_optimal_cuts,bands2_nocensus,3,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 1 a 66",90660,0.03346414840275686,1.1984845504962716,0.0,5.0,8.172484397888184
+02_optimal_cuts,bands2_nocensus,4,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 67 o más",3800,0.0014026446495750725,5.656436172879514,0.0,15.0,10.966461658477783
+02_optimal_cuts,bands2_nocensus,5,"Con ambas conexiones, Fan-In 1 a 66, Fan-Out 1 a 11",190597,0.07035259533554213,1.1304817357674088,1.273870600025245,6.0,7.4688568115234375
+02_optimal_cuts,bands2_nocensus,6,"Con ambas conexiones, Fan-In 1 a 66, Fan-Out 12 o más",22800,0.008415867897450436,1.5423197685871843,3.0837657548343644,5.0,3.3004790544509888
+02_optimal_cuts,bands2_nocensus,7,"Con ambas conexiones, Fan-In 67 o más, Fan-Out 1 a 11",6171,0.0022778210875073084,5.681114741205026,1.3262510723624246,25.0,10.184804916381836
+02_optimal_cuts,bands2_nocensus,8,"Con ambas conexiones, Fan-In 67 o más, Fan-Out 12 o más",1063,0.0003923713848679742,5.500416643874361,3.433530818532427,4.0,2.5434634685516357
+02_optimal_cuts,bands2_census,0,Censo (Fan-In 1000 o más),1625,0.0005998151461998665,7.9042765253799745,1.0249502530922956,31.0,11.25256633758545
+02_optimal_cuts,bands2_census,1,"Aislado (Fan-In 0, Fan-Out 0)",939787,0.3468913703395286,0.0,0.0,2.0,4.5119781494140625
+02_optimal_cuts,bands2_census,2,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 1 a 11",1309062,0.4831970553321167,0.0,1.3051724594684317,2.0,4.060232639312744
+02_optimal_cuts,bands2_census,3,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 12 o más",145228,0.0536061255706549,0.0,3.0716380755781336,3.0,3.45242977142334
+02_optimal_cuts,bands2_census,4,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 1 a 62",90496,0.033403613212617304,1.1930821190673107,0.0,5.0,8.169746398925781
+02_optimal_cuts,bands2_census,5,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 63 o más",3380,0.0012476155040957223,5.202135189047598,0.0,14.0,10.729637145996094
+02_optimal_cuts,bands2_census,6,"Con ambas conexiones, Fan-In 1 a 62, Fan-Out 1 a 11",190373,0.0702699131246198,1.1268927687397763,1.2738926450978043,6.0,7.466119289398193
+02_optimal_cuts,bands2_census,7,"Con ambas conexiones, Fan-In 1 a 62, Fan-Out 12 o más",22586,0.008336876856658576,1.5171625674002822,3.086026263523987,5.0,3.399041771888733
+02_optimal_cuts,bands2_census,8,"Con ambas conexiones, Fan-In 63 o más, Fan-Out 1 a 11",5490,0.002026452401622934,5.256939738055035,1.315902022533288,23.0,10.012320518493652
+02_optimal_cuts,bands2_census,9,"Con ambas conexiones, Fan-In 63 o más, Fan-Out 12 o más",1141,0.00042116251188556783,4.935557553752495,3.3604843231756525,3.0,2.5325119495391846
+02_optimal_cuts,bands3_nocensus,0,"Aislado (Fan-In 0, Fan-Out 0)",939787,0.3468913703395286,0.0,0.0,2.0,4.5119781494140625
+02_optimal_cuts,bands3_nocensus,1,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 1 a 5",1048429,0.3869929808708799,0.0,1.0910799884944766,2.0,4.186173915863037
+02_optimal_cuts,bands3_nocensus,2,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 6 a 24",366083,0.13512746348694507,0.0,2.3500619655242327,3.0,3.5373032093048096
+02_optimal_cuts,bands3_nocensus,3,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 25 o más",39778,0.01468273654494664,0.0,3.781031946884147,2.0,3.42505145072937
+02_optimal_cuts,bands3_nocensus,4,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 1 a 17",85879,0.03169939996338359,1.071391557080079,0.0,4.0,8.052019119262695
+02_optimal_cuts,bands3_nocensus,5,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 18 a 193",6552,0.002418454669477862,3.8024011921125296,0.0,11.0,10.313484191894531
+02_optimal_cuts,bands3_nocensus,6,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 194 o más",2029,0.0007489384194704795,6.518333496173931,0.0,17.0,11.216974258422852
+02_optimal_cuts,bands3_nocensus,7,"Con ambas conexiones, Fan-In 1 a 17, Fan-Out 1 a 5",153801,0.056770565723498874,1.0228081978567216,1.10618776120457,5.0,7.389459133148193
+02_optimal_cuts,bands3_nocensus,8,"Con ambas conexiones, Fan-In 1 a 17, Fan-Out 6 a 24",44341,0.016367017475475865,1.1647393914183821,2.402474030021708,9.0,6.294319152832031
+02_optimal_cuts,bands3_nocensus,9,"Con ambas conexiones, Fan-In 1 a 17, Fan-Out 25 o más",5722,0.002112087548649622,1.4857559976249133,3.6387702872734344,3.0,2.527036190032959
+02_optimal_cuts,bands3_nocensus,10,"Con ambas conexiones, Fan-In 18 a 193, Fan-Out 1 a 5",8784,0.003242323842596694,3.798197251153836,1.1240707437153608,18.0,10.020533561706543
+02_optimal_cuts,bands3_nocensus,11,"Con ambas conexiones, Fan-In 18 a 193, Fan-Out 6 a 24",3316,0.0012239920152607737,3.799964882544265,2.4176632925262793,22.0,7.4099931716918945
+02_optimal_cuts,bands3_nocensus,12,"Con ambas conexiones, Fan-In 18 a 193, Fan-Out 25 o más",924,0.00034106412005457026,3.8990463350483235,4.046196482894697,3.0,2.5297741889953613
+02_optimal_cuts,bands3_nocensus,13,"Con ambas conexiones, Fan-In 194 o más, Fan-Out 1 a 5",2744,0.0010128570837984207,6.526820053879465,1.1690662343869807,23.0,10.275154113769531
+02_optimal_cuts,bands3_nocensus,14,"Con ambas conexiones, Fan-In 194 o más, Fan-Out 6 a 24 + Con ambas conexiones, Fan-In 194 o más, Fan-Out 25 o más",999,0.00036874789603302566,6.610540558396459,2.623195187550703,52.0,9.544147491455078
+02_optimal_cuts,bands3_census,0,Censo (Fan-In 1000 o más),1625,0.0005998151461998665,7.9042765253799745,1.0249502530922956,31.0,11.25256633758545
+02_optimal_cuts,bands3_census,1,"Aislado (Fan-In 0, Fan-Out 0)",939787,0.3468913703395286,0.0,0.0,2.0,4.5119781494140625
+02_optimal_cuts,bands3_census,2,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 1 a 5",1048429,0.3869929808708799,0.0,1.0910799884944766,2.0,4.186173915863037
+02_optimal_cuts,bands3_census,3,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 6 a 24",366083,0.13512746348694507,0.0,2.3500619655242327,3.0,3.5373032093048096
+02_optimal_cuts,bands3_census,4,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 25 o más",39778,0.01468273654494664,0.0,3.781031946884147,2.0,3.42505145072937
+02_optimal_cuts,bands3_census,5,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 1 a 16",85563,0.03158275898726103,1.064673726435322,0.0,4.0,8.043806076049805
+02_optimal_cuts,bands3_census,6,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 17 a 179",6783,0.0025037206994915043,3.741941040373718,0.0,11.0,10.236824035644531
+02_optimal_cuts,bands3_census,7,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 180 o más",1530,0.0005647490299604897,5.93079232304623,0.0,15.0,10.888432502746582
+02_optimal_cuts,bands3_census,8,"Con ambas conexiones, Fan-In 1 a 16, Fan-Out 1 a 5",153358,0.05660704688671946,1.017413430990245,1.1061900453019293,5.0,7.3785080909729
+02_optimal_cuts,bands3_census,9,"Con ambas conexiones, Fan-In 1 a 16, Fan-Out 6 a 24",44204,0.016316448444688554,1.1593911959110257,2.4023816798342397,9.0,6.288843154907227
+02_optimal_cuts,bands3_census,10,"Con ambas conexiones, Fan-In 1 a 16, Fan-Out 25 o más",5696,0.0021024905063104244,1.4793444790562629,3.6383939119855353,3.0,2.527036190032959
+02_optimal_cuts,bands3_census,11,"Con ambas conexiones, Fan-In 17 a 179, Fan-Out 1 a 5",9097,0.0033578574676801144,3.7334689251019393,1.1222154738541914,18.0,9.995893478393555
+02_optimal_cuts,bands3_census,12,"Con ambas conexiones, Fan-In 17 a 179, Fan-Out 6 a 24",3425,0.0012642257696827957,3.7519094491493052,2.418029341765195,22.0,7.466119289398193
+02_optimal_cuts,bands3_census,13,"Con ambas conexiones, Fan-In 17 a 179, Fan-Out 25 o más",949,0.00035029204538072206,3.8700077667788153,4.037643666213874,3.0,2.5297741889953613
+02_optimal_cuts,bands3_census,14,"Con ambas conexiones, Fan-In 180 o más, Fan-Out 1 a 5",2124,0.0007840045357098563,5.978422791364306,1.1550141376015668,22.0,10.023271560668945
+02_optimal_cuts,bands3_census,15,"Con ambas conexiones, Fan-In 180 o más, Fan-Out 6 a 24 + Con ambas conexiones, Fan-In 180 o más, Fan-Out 25 o más",737,0.00027203923861495485,5.969652048549781,2.627660020447197,43.0,9.015742301940918
+02_optimal_cuts,bands4_nocensus,0,"Aislado (Fan-In 0, Fan-Out 0)",939787,0.3468913703395286,0.0,0.0,2.0,4.5119781494140625
+02_optimal_cuts,bands4_nocensus,1,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 1 a 3",846289,0.312379667853747,0.0,0.9484742217165709,2.0,4.156057357788086
+02_optimal_cuts,bands4_nocensus,2,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 4 a 11",462773,0.17081738747836975,0.0,1.957478870840057,3.0,3.885010242462158
+02_optimal_cuts,bands4_nocensus,3,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 12 a 39",128122,0.0472920099454888,0.0,2.9173640898877298,3.0,3.433264970779419
+02_optimal_cuts,bands4_nocensus,4,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 40 o más",17106,0.006314115625166102,0.0,4.2271327321091015,2.0,3.608487367630005
+02_optimal_cuts,bands4_nocensus,5,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 1 a 8",81015,0.0299040148119275,0.9823969620101319,0.0,4.0,7.926077842712402
+02_optimal_cuts,bands4_nocensus,6,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 9 a 66",9645,0.0035601335908293616,3.013553081467309,0.0,9.0,9.878165245056152
+02_optimal_cuts,bands4_nocensus,7,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 67 a 305",2301,0.000849338247019011,4.85969988863261,0.0,14.0,10.6803560256958
+02_optimal_cuts,bands4_nocensus,8,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 306 o más",1499,0.0005533064025560614,6.879444972113795,0.0,19.0,11.47159481048584
+02_optimal_cuts,bands4_nocensus,9,"Con ambas conexiones, Fan-In 1 a 8, Fan-Out 1 a 3",119650,0.04416485061096248,0.9417097619379599,0.9769386589389875,5.0,7.134839057922363
+02_optimal_cuts,bands4_nocensus,10,"Con ambas conexiones, Fan-In 1 a 8, Fan-Out 4 a 11",54172,0.019995806830731797,0.9751650728439585,1.9218613707821792,9.0,7.268993854522705
+02_optimal_cuts,bands4_nocensus,11,"Con ambas conexiones, Fan-In 1 a 8, Fan-Out 12 a 39",13894,0.005128511779262121,1.0177883280918831,2.9300414559393175,13.0,5.845311641693115
+02_optimal_cuts,bands4_nocensus,12,"Con ambas conexiones, Fan-In 1 a 8, Fan-Out 40 o más",1341,0.0004949859144947822,0.9567942706780764,4.249077768969551,15.0,6.080766677856445
+02_optimal_cuts,bands4_nocensus,13,"Con ambas conexiones, Fan-In 9 a 66, Fan-Out 1 a 3",11190,0.004130419375985543,2.9727637881691864,0.9783352068185681,14.0,9.715263843536377
+02_optimal_cuts,bands4_nocensus,14,"Con ambas conexiones, Fan-In 9 a 66, Fan-Out 4 a 11",5585,0.0020615185178623104,2.989970503083035,1.9420875681256273,24.0,9.221081733703613
+02_optimal_cuts,bands4_nocensus,15,"Con ambas conexiones, Fan-In 9 a 66, Fan-Out 12 a 39",7061,0.0026063352291183124,2.5546721918592565,3.084187018272581,1.0,2.32991099357605
+02_optimal_cuts,bands4_nocensus,16,"Con ambas conexiones, Fan-In 9 a 66, Fan-Out 40 o más",504,0.00018603497457522015,3.3772583920359422,4.2150900737930534,3.0,2.5023956298828125
+02_optimal_cuts,bands4_nocensus,17,"Con ambas conexiones, Fan-In 67 a 305, Fan-Out 1 a 3",2403,0.0008869881823497103,4.87439392870193,1.0005762863281218,20.0,10.168377876281738
+02_optimal_cuts,bands4_nocensus,18,"Con ambas conexiones, Fan-In 67 a 305, Fan-Out 4 a 11",1257,0.00046398008539891213,4.864574272731091,1.9176494711769143,34.0,9.582477569580078
+02_optimal_cuts,bands4_nocensus,19,"Con ambas conexiones, Fan-In 67 a 305, Fan-Out 12 a 39",520,0.00019194084678395728,4.811284929156925,3.01699371835912,4.0,2.5489389896392822
+02_optimal_cuts,bands4_nocensus,20,"Con ambas conexiones, Fan-In 67 a 305, Fan-Out 40 o más + Con ambas conexiones, Fan-In 306 o más, Fan-Out 40 o más + Con ambas conexiones, Fan-In 306 o más, Fan-Out 12 a 39",543,0.00020043053808401694,6.160358617452862,3.8324245424553456,5.0,2.5434634685516357
+02_optimal_cuts,bands4_nocensus,21,"Con ambas conexiones, Fan-In 306 o más, Fan-Out 1 a 3",1674,0.000617901879839124,6.828040946370822,1.0536234598026086,19.0,10.247775077819824
+02_optimal_cuts,bands4_nocensus,22,"Con ambas conexiones, Fan-In 306 o más, Fan-Out 4 a 11",837,0.000308950939919562,6.929605797201812,1.918350650564814,51.0,10.732375144958496
+02_optimal_cuts,bands4_census,0,Censo (Fan-In 1000 o más),1625,0.0005998151461998665,7.9042765253799745,1.0249502530922956,31.0,11.25256633758545
+02_optimal_cuts,bands4_census,1,"Aislado (Fan-In 0, Fan-Out 0)",939787,0.3468913703395286,0.0,0.0,2.0,4.5119781494140625
+02_optimal_cuts,bands4_census,2,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 1 a 3",846289,0.312379667853747,0.0,0.9484742217165709,2.0,4.156057357788086
+02_optimal_cuts,bands4_census,3,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 4 a 11",462773,0.17081738747836975,0.0,1.957478870840057,3.0,3.885010242462158
+02_optimal_cuts,bands4_census,4,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 12 a 39",128122,0.0472920099454888,0.0,2.9173640898877298,3.0,3.433264970779419
+02_optimal_cuts,bands4_census,5,"Consumidor (Fan-In 0, Fan-Out mayor a 0), Fan-Out 40 o más",17106,0.006314115625166102,0.0,4.2271327321091015,2.0,3.608487367630005
+02_optimal_cuts,bands4_census,6,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 1 a 8",81015,0.0299040148119275,0.9823969620101319,0.0,4.0,7.926077842712402
+02_optimal_cuts,bands4_census,7,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 9 a 62",9481,0.003499598400689806,2.9933835639569257,0.0,9.0,9.878165245056152
+02_optimal_cuts,bands4_census,8,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 63 a 284",2404,0.0008873572993627563,4.792233185123029,0.0,13.0,10.639287948608398
+02_optimal_cuts,bands4_census,9,"Consumido sin consumir (Fan-In mayor a 0, Fan-Out 0), Fan-In 285 o más",976,0.000360258204732966,6.211770862648721,0.0,15.0,11.12388801574707
+02_optimal_cuts,bands4_census,10,"Con ambas conexiones, Fan-In 1 a 8, Fan-Out 1 a 3",119650,0.04416485061096248,0.9417097619379599,0.9769386589389875,5.0,7.134839057922363
+02_optimal_cuts,bands4_census,11,"Con ambas conexiones, Fan-In 1 a 8, Fan-Out 4 a 11",54172,0.019995806830731797,0.9751650728439585,1.9218613707821792,9.0,7.268993854522705
+02_optimal_cuts,bands4_census,12,"Con ambas conexiones, Fan-In 1 a 8, Fan-Out 12 a 39",13894,0.005128511779262121,1.0177883280918831,2.9300414559393175,13.0,5.845311641693115
+02_optimal_cuts,bands4_census,13,"Con ambas conexiones, Fan-In 1 a 8, Fan-Out 40 o más",1341,0.0004949859144947822,0.9567942706780764,4.249077768969551,15.0,6.080766677856445
+02_optimal_cuts,bands4_census,14,"Con ambas conexiones, Fan-In 9 a 62, Fan-Out 1 a 3",11030,0.004071360653898171,2.9552297244839645,0.9786030312954583,13.0,9.70020580291748
+02_optimal_cuts,bands4_census,15,"Con ambas conexiones, Fan-In 9 a 62, Fan-Out 4 a 11",5521,0.0020378950290273617,2.9761923310116982,1.9414939991461178,24.0,9.221081733703613
+02_optimal_cuts,bands4_census,16,"Con ambas conexiones, Fan-In 9 a 62, Fan-Out 12 a 39",6860,0.002532142709496052,2.5065029254493476,3.0932456305673166,1.0,2.3271732330322266
+02_optimal_cuts,bands4_census,17,"Con ambas conexiones, Fan-In 9 a 62, Fan-Out 40 o más + Con ambas conexiones, Fan-In 63 a 284, Fan-Out 40 o más + Con ambas conexiones, Fan-In 285 o más, Fan-Out 12 a 39 + Con ambas conexiones, Fan-In 285 o más, Fan-Out 40 o más",955,0.0003525067474589985,4.381288605304378,4.091719404335366,3.0,2.527036190032959
+02_optimal_cuts,bands4_census,18,"Con ambas conexiones, Fan-In 63 a 284, Fan-Out 1 a 3",2477,0.0009143028413151197,4.801407690872699,0.9967617432004784,20.0,10.212182998657227
+02_optimal_cuts,bands4_census,19,"Con ambas conexiones, Fan-In 63 a 284, Fan-Out 4 a 11",1285,0.00047431536176420215,4.807199205177652,1.9215783065624374,34.0,9.53867244720459
+02_optimal_cuts,bands4_census,20,"Con ambas conexiones, Fan-In 63 a 284, Fan-Out 12 a 39",677,0.00024989221783219053,4.57186422747721,2.954262137156194,2.0,2.5106091499328613
+02_optimal_cuts,bands4_census,21,"Con ambas conexiones, Fan-In 285 o más, Fan-Out 1 a 3",1186,0.00043777277747264107,6.255511215236103,1.0443875334341082,17.0,9.889116764068604
+02_optimal_cuts,bands4_census,22,"Con ambas conexiones, Fan-In 285 o más, Fan-Out 4 a 11",542,0.00020006142107097086,6.21997238322367,1.9325673933843628,44.5,10.272416114807129
