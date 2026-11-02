@@ -24,10 +24,15 @@ Corrections in this version:
      @rustbin/cargo.target.x86_64-unknown-linux-gnu.
   6. "Only this" for population A leaves out the family rule, which A does
      not apply.
-  7. New columns fan_in_internal and fan_in_external: dependents from the
-     package's own scope and from elsewhere.
+  7. New columns fan_in_internal, fan_in_external, fan_out_internal and
+     fan_out_external: links within the package's own scope and with other
+     scopes.
   8. keywords are written as lists of text. Some manifests nest a list, or
      put a number, inside their keywords, and pyarrow cannot write that.
+  9. A package that declares itself as a dependency is not its own
+     dependent: the declaration is subtracted from fan_in and fan_out
+     (column self_deps). 23,058 packages do it, and for 17,244 packages of
+     population A it was their only dependent.
 
 FAMILY_MIN_SIZE stays at 2: exploration/family_threshold.py found that,
 among scopes with dependents, 72% to 83% depend mostly on themselves at
@@ -273,13 +278,14 @@ def load_profile():
 
 def load_dependency_check(universe_names, security_names):
     # Returns (dep_issues, placeholder_counter, internal_fan_in,
-    #          internal_fan_out, builtin_declarers).
+    #          internal_fan_out, builtin_declarers, self_deps).
     # dep_issues: dict name -> (n_missing, n_placeholder, False); fs and http
     #   are not counted, because Node loads its own built-in module first
     # placeholder_counter: Counter placeholder_name -> n_packages declaring it
     # internal_fan_in: Counter name -> dependents from its own scope
     # internal_fan_out: Counter name -> deps declared to its own scope
     # builtin_declarers: packages that declare fs or http
+    # self_deps: Counter name -> times the package declares itself
     p2_dir = str(DIR_PASADA2)
     p2_files = sorted(f for f in os.listdir(p2_dir) if f.endswith(".jsonl"))
     dep_issues = {}
@@ -287,6 +293,7 @@ def load_dependency_check(universe_names, security_names):
     internal_fan_in = collections.Counter()
     internal_fan_out = collections.Counter()
     builtin_declarers = set()
+    self_deps = collections.Counter()
     seen = set()
     for fi, fname in enumerate(p2_files):
         with open(os.path.join(p2_dir, fname), encoding="utf-8") as fh:
@@ -307,6 +314,9 @@ def load_dependency_check(universe_names, security_names):
                 pkg_placeholders = set()
                 for d in deps_raw:
                     dn = d.strip().lower()
+                    if dn == name:
+                        self_deps[name] += 1
+                        continue
                     if dn not in universe_names:
                         n_missing += 1
                         continue
@@ -326,7 +336,8 @@ def load_dependency_check(universe_names, security_names):
         if (fi + 1) % 20 == 0 or fi + 1 == len(p2_files):
             print(f"  dep_check: {fi + 1}/{len(p2_files)} shards, "
                   f"{len(dep_issues):,} with issues")
-    return dep_issues, placeholder_counter, internal_fan_in, internal_fan_out, builtin_declarers
+    return (dep_issues, placeholder_counter, internal_fan_in, internal_fan_out,
+            builtin_declarers, self_deps)
 
 # ── Additional imports for main ──────────────────────────────────────
 import gc
@@ -630,6 +641,14 @@ def md_part2(f, flags, ctx):
     for name, cnt in top20:
         ph_rows.append((name, f"{cnt:,}"))
     md_table(f, ["Placeholder", "Packages declaring it"], ph_rows)
+    # 7d. Packages that declare themselves
+    f.write("### 7d. Packages in A that declare themselves, by fan_in band\n\n")
+    sd = flags[flags["in_A"] & (flags["self_deps"] > 0)]
+    f.write(f"Packages in A: {len(sd):,}. Their fan_in already excludes the "
+            f"self-dependency.\n\n")
+    md_table(f, ["Band", "Packages"],
+             [(label, f"{int(cond(sd['fan_in']).sum()):,}") for label, cond in fi_bands])
+    del sd
     # ── 8. Notes ─────────────────────────────────────────────────
     f.write("## 8. Notes\n\n")
     f.write("- The fan_in and fan_out of datasets A and B come from the "
@@ -640,8 +659,11 @@ def md_part2(f, flags, ctx):
     f.write("- Packages with errors in pasada2 are not part of the universe. "
             "A dependency on one of them counts as missing when the error was "
             "a 404 (the package no longer exists), and as existing otherwise.\n")
+    f.write("- fan_in and fan_out exclude self-dependencies: a package that "
+            "declares itself is not its own dependent (column self_deps).\n")
     f.write("- fan_in_internal counts dependents from the package's own scope, "
-            "read from pasada2; fan_in_external is fan_in minus fan_in_internal.\n")
+            "read from pasada2; fan_in_external is fan_in minus fan_in_internal. "
+            "fan_out_internal and fan_out_external split fan_out the same way.\n")
     f.write("- Dependency lists are not stored (only dep_hash and "
             "counts). Peer and optional dependency lists are also not "
             "stored (only n_peer and n_opt).\n")
@@ -758,9 +780,16 @@ def main():
                 | df["name"].isin(confirmed))
     security_names = set(df.loc[sec_mask, "name"])
     universe_names = set(df["name"]) | error_names
-    dep_issues, placeholder_counter, internal_fan_in, internal_fan_out, builtin_declarers = (
-        load_dependency_check(universe_names, security_names))
+    (dep_issues, placeholder_counter, internal_fan_in, internal_fan_out,
+     builtin_declarers, self_deps) = load_dependency_check(universe_names, security_names)
     del universe_names
+    # A package is not its own dependent: the graph counted its declaration
+    df["self_deps"] = df["name"].map(self_deps).fillna(0).astype("int32")
+    for col in ["fan_in", "fan_out"]:
+        df[col] = (df[col] - df["self_deps"]).clip(lower=0).astype("int32")
+    n_self = int((df["self_deps"] > 0).sum())
+    print(f"  self-dependencies subtracted from fan_in and fan_out: {n_self:,} packages")
+    del self_deps
     df["fan_in_internal"] = df["name"].map(internal_fan_in).fillna(0).astype("int32")
     df["fan_in_external"] = (df["fan_in"] - df["fan_in_internal"]).clip(lower=0).astype("int32")
     df["fan_out_internal"] = df["name"].map(internal_fan_out).fillna(0).astype("int32")
@@ -852,7 +881,7 @@ def main():
         "name", "scope", "scope_size", "created_date", "created_year",
         "latest_profile", "latest_p2", "tarball",
         "dep_hash", "fan_in", "fan_in_internal", "fan_in_external",
-        "fan_out", "fan_out_internal", "fan_out_external",
+        "fan_out", "fan_out_internal", "fan_out_external", "self_deps",
         "fan_in_dev", "fan_out_dev",
         "n_versions", "n_maintainers", "deprecated", "has_github",
         "n_keywords", "keywords", "n_peer", "n_opt",
@@ -876,7 +905,8 @@ def main():
     # inclusion_flags.parquet
     print("[9] Writing inclusion_flags.parquet ...")
     flags_cols = (["name", "scope", "scope_size", "created_year",
-                   "fan_in", "fan_in_external", "fan_out", "fan_out_external"]
+                   "fan_in", "fan_in_external", "fan_out", "fan_out_external",
+                   "self_deps"]
                   + CRITERIA + ["in_A", "in_B"])
     flags = df[flags_cols].copy()
     write_parquet_chunked(flags, DIR_OUT / "inclusion_flags.parquet")
@@ -913,6 +943,7 @@ def main():
             "n_without_profile": n_without_profile,
             "n_A": n_A,
             "n_B": n_B,
+            "self_dependencies": n_self,
         },
         "columns_A": cols_a,
         "columns_B": cols_b,
