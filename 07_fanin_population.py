@@ -10,7 +10,7 @@ BASE = Path(__file__).resolve().parent
 INPUT_A = BASE / "data" / "07_inclusion_packages" / "population_with_families.parquet"
 INPUT_B = BASE / "data" / "07_inclusion_packages" / "population_without_families.parquet"
 DIR_OUT = BASE / "data" / "fanin_population"
-EXCLUDED_COLS = ["file_count", "unpacked"]
+EXCLUDED_COLS = ["file_count", "unpacked", "self_deps"]
 FILTER = [("fan_in", ">", 0)]
 COLS = [
     "name", "scope", "scope_size", "created_date", "created_year",
@@ -73,7 +73,7 @@ def write_summary(path, counts, checks):
         f.write(f"- With families (all): {fmt(counts['with_families'])}\n")
         f.write(f"- Without families (scope_size < 2): "
                 f"{fmt(counts['without_families'])}\n")
-        f.write(f"- External links only (fan_in_external > 0): "
+        f.write(f"- With external dependents (fan_in_external > 0): "
                 f"{fmt(counts['external_only'])}\n\n")
         f.write("## Checks\n\n")
         for label, result in checks:
@@ -96,7 +96,7 @@ def main():
     checks = run_checks(df, n_b)
     print(f"Total: {n:,}")
     print(f"Without families: {n_no_fam:,}")
-    print(f"External links only: {n_ext:,}")
+    print(f"With external dependents: {n_ext:,}")
     for label, result in checks:
         if result != "ok":
             print(f"  WARNING: {label}: {result}")
