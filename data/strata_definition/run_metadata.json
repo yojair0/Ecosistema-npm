@@ -1,0 +1,55 @@
+{
+  "executed_at": "2026-11-12 11:54:47",
+  "input": "C:\\Users\\mvqui\\Desktop\\Ecosistema-npm\\data\\fanin_population\\fanin_population.parquet",
+  "n_packages": 680373,
+  "n_strata": [
+    6,
+    7
+  ],
+  "fine_classes": "1..1000, then doubling",
+  "peak": {
+    "value": 9,
+    "observed": 11433.0,
+    "expected": 6731.931372199215,
+    "rule": "sqrt(f(v-1) * f(v+1))"
+  },
+  "sampling_limits": "max 1 per scope, max 1 per non-empty dep_hash, per stratum",
+  "family": "scope_size >= 2",
+  "seed": 42,
+  "edges": {
+    "6 tramos, con pico": [
+      1,
+      4,
+      13,
+      50,
+      164,
+      454
+    ],
+    "6 tramos, sin pico": [
+      1,
+      4,
+      13,
+      51,
+      165,
+      456
+    ],
+    "7 tramos, con pico": [
+      1,
+      3,
+      9,
+      29,
+      85,
+      225,
+      514
+    ],
+    "7 tramos, sin pico": [
+      1,
+      3,
+      9,
+      29,
+      86,
+      226,
+      515
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "executed_at": "2026-11-18 01:00:52",
+  "strata_config": "6 tramos, con pico",
+  "edges": [
+    1,
+    4,
+    13,
+    50,
+    164,
+    454
+  ],
+  "allocation": "finite population formula per stratum",
+  "K": 2,
+  "p": 0.5,
+  "e": 0.05,
+  "targets": {
+    "1": 400,
+    "2": 399,
+    "3": 396,
+    "4": 386,
+    "5": 366,
+    "6": 365
+  },
+  "coverage_min": 0.25,
+  "seed": 2028,
+  "workers": 4,
+  "jtmetrics_version": "1.1.0",
+  "node_max_old_space_mb": 8192,
+  "wall_seconds": 2383.0158015999477,
+  "attempts": 2957,
+  "in_sample": 2312
+}
