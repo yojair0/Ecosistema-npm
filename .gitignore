@@ -15,3 +15,7 @@ data/names_sorted.json
 !data/profile_problems.jsonl
 !data/audit_sample.jsonl
 figures/
+node_modules/
+data/fanin_population/
+data/fanin_families/
+data/strata_jtmetrics_sample/raw
